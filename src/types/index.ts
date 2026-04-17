@@ -5,6 +5,8 @@ export interface Account {
   name: string
   type: AccountType
   currency: string
+  isin: string | null
+  units: number | null
   created_at: string
 }
 

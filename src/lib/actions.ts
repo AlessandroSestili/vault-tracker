@@ -9,12 +9,20 @@ export async function createAccount(data: {
   type: AccountType
   currency: string
   initialValue: number
+  isin?: string
+  units?: number
 }) {
   const supabase = await createClient()
 
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .insert({ name: data.name, type: data.type, currency: data.currency })
+    .insert({
+      name: data.name,
+      type: data.type,
+      currency: data.currency,
+      isin: data.isin || null,
+      units: data.units || null,
+    })
     .select()
     .single()
 
