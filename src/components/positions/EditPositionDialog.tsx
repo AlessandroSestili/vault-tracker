@@ -8,43 +8,67 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { updatePosition } from '@/lib/actions'
+import { updatePosition, updateManualPosition } from '@/lib/actions'
 import { Pencil, Loader2 } from 'lucide-react'
 import type { Position } from '@/types'
 
-const schema = z.object({
+const liveSchema = z.object({
   isin: z.string().min(1, 'Obbligatorio').toUpperCase(),
   units: z.string().transform((v) => parseFloat(v)).pipe(z.number().positive('Deve essere > 0')),
-  broker: z.string().min(1, 'Obbligatorio'),
+  broker: z.string().default(''),
   displayName: z.string().optional(),
 })
 
-type FormInput = z.input<typeof schema>
-type FormData = z.output<typeof schema>
+const manualSchema = z.object({
+  displayName: z.string().min(1, 'Obbligatorio'),
+  broker: z.string().default(''),
+  newValue: z.string().transform((v) => parseFloat(v)).pipe(z.number().min(0, 'Deve essere ≥ 0')),
+})
+
+type LiveInput = z.input<typeof liveSchema>
+type LiveData = z.output<typeof liveSchema>
+type ManualInput = z.input<typeof manualSchema>
+type ManualData = z.output<typeof manualSchema>
 
 export function EditPositionDialog({ position }: { position: Position }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormInput, unknown, FormData>({
-    resolver: zodResolver(schema),
+  const liveForm = useForm<LiveInput, unknown, LiveData>({
+    resolver: zodResolver(liveSchema),
     defaultValues: {
-      isin: position.isin,
-      units: position.units.toString(),
+      isin: position.isin ?? '',
+      units: position.units?.toString() ?? '',
       broker: position.broker,
       displayName: position.display_name ?? '',
     },
   })
 
-  function onSubmit(data: FormData) {
+  const manualForm = useForm<ManualInput, unknown, ManualData>({
+    resolver: zodResolver(manualSchema),
+    defaultValues: {
+      displayName: position.display_name ?? '',
+      broker: position.broker,
+      newValue: position.current_value_eur?.toString() ?? '0',
+    },
+  })
+
+  function onSubmitLive(data: LiveData) {
     startTransition(async () => {
       await updatePosition(position.id, data)
       setOpen(false)
     })
   }
 
+  function onSubmitManual(data: ManualData) {
+    startTransition(async () => {
+      await updateManualPosition(position.id, { displayName: data.displayName, broker: data.broker, newValueEur: data.newValue })
+      setOpen(false)
+    })
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset() }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={
         <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
       }>
@@ -54,30 +78,52 @@ export function EditPositionDialog({ position }: { position: Position }) {
         <DialogHeader>
           <DialogTitle>Modifica posizione</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label>ISIN / Ticker</Label>
-            <Input placeholder="IE00B3RBWM25" className="uppercase font-mono" {...register('isin')} />
-            {errors.isin && <p className="text-xs text-destructive">{errors.isin.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Unità</Label>
-            <Input type="number" step="0.000001" placeholder="10.5" {...register('units')} />
-            {errors.units && <p className="text-xs text-destructive">{errors.units.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Broker / Piattaforma</Label>
-            <Input placeholder="TradeRepublic" {...register('broker')} />
-            {errors.broker && <p className="text-xs text-destructive">{errors.broker.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Nome personalizzato <span className="text-muted-foreground">(opzionale)</span></Label>
-            <Input placeholder="VWCE" {...register('displayName')} />
-          </div>
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva modifiche'}
-          </Button>
-        </form>
+
+        {!position.is_manual ? (
+          <form onSubmit={liveForm.handleSubmit(onSubmitLive)} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>ISIN / Ticker</Label>
+              <Input className="uppercase font-mono" {...liveForm.register('isin')} />
+              {liveForm.formState.errors.isin && <p className="text-xs text-destructive">{liveForm.formState.errors.isin.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Unità</Label>
+              <Input type="number" step="0.000001" {...liveForm.register('units')} />
+              {liveForm.formState.errors.units && <p className="text-xs text-destructive">{liveForm.formState.errors.units.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Broker</Label>
+              <Input {...liveForm.register('broker')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nome personalizzato <span className="text-muted-foreground">(opzionale)</span></Label>
+              <Input {...liveForm.register('displayName')} />
+            </div>
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva modifiche'}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={manualForm.handleSubmit(onSubmitManual)} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Nome asset</Label>
+              <Input {...manualForm.register('displayName')} />
+              {manualForm.formState.errors.displayName && <p className="text-xs text-destructive">{manualForm.formState.errors.displayName.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Broker / Piattaforma</Label>
+              <Input {...manualForm.register('broker')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valore attuale (€)</Label>
+              <Input type="number" step="0.01" {...manualForm.register('newValue')} />
+              {manualForm.formState.errors.newValue && <p className="text-xs text-destructive">{manualForm.formState.errors.newValue.message}</p>}
+            </div>
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva modifiche'}
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )

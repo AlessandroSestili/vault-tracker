@@ -10,10 +10,12 @@ export interface Account {
 
 export interface Position {
   id: string
-  isin: string
-  units: number
+  isin: string | null
+  units: number | null
   broker: string
   display_name: string | null
+  is_manual: boolean
+  current_value_eur: number | null
   created_at: string
 }
 
@@ -28,4 +30,15 @@ export interface Snapshot {
 export interface AccountWithLatestSnapshot extends Account {
   latest_value: number | null
   latest_recorded_at: string | null
+}
+
+export interface Liability {
+  id: string
+  name: string
+  type: 'debt' | 'credit'
+  amount: number
+  currency: string
+  counterparty: string | null
+  note: string | null
+  created_at: string
 }

@@ -3,14 +3,16 @@
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { UpdateValueDialog } from './UpdateValueDialog'
 import { EditPositionDialog } from '@/components/positions/EditPositionDialog'
-import { deleteAccount, deletePosition } from '@/lib/actions'
-import type { AccountWithLatestSnapshot, Position } from '@/types'
+import { EditLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
+import { deleteAccount, deletePosition, deleteLiability } from '@/lib/actions'
+import type { AccountWithLatestSnapshot, Position, Liability } from '@/types'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
 import { formatCurrency } from '@/lib/formats'
 
-const ICON_BG: Record<string, string> = {
+const ACCOUNT_ICON_BG: Record<string, string> = {
   investment: 'bg-emerald-500/15 text-emerald-400',
   cash:       'bg-sky-500/15 text-sky-400',
   pension:    'bg-violet-500/15 text-violet-400',
@@ -26,16 +28,8 @@ export type PositionWithQuote = Position & {
   changePercent: number | undefined
 }
 
-type FlatItem =
-  | { kind: 'position'; data: PositionWithQuote }
-  | { kind: 'account'; data: AccountWithLatestSnapshot }
-
 const DeleteTrigger = (
-  <Button
-    variant="ghost"
-    size="icon"
-    className="w-7 h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-  >
+  <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
     <Trash2 className="w-3.5 h-3.5" />
   </Button>
 )
@@ -43,41 +37,48 @@ const DeleteTrigger = (
 export function AccountsList({
   accounts,
   positionsWithQuotes,
+  manualPositions,
+  liabilities,
 }: {
   accounts: AccountWithLatestSnapshot[]
   positionsWithQuotes: PositionWithQuote[]
+  manualPositions: Position[]
+  liabilities: Liability[]
 }) {
-  const items: FlatItem[] = [
-    ...positionsWithQuotes.map((p) => ({ kind: 'position' as const, data: p })),
+  type Item =
+    | { kind: 'live-position'; data: PositionWithQuote }
+    | { kind: 'manual-position'; data: Position }
+    | { kind: 'account'; data: AccountWithLatestSnapshot }
+    | { kind: 'liability'; data: Liability }
+
+  const items: Item[] = [
+    ...positionsWithQuotes.map((p) => ({ kind: 'live-position' as const, data: p })),
+    ...manualPositions.map((p) => ({ kind: 'manual-position' as const, data: p })),
     ...accounts.map((a) => ({ kind: 'account' as const, data: a })),
+    ...liabilities.map((l) => ({ kind: 'liability' as const, data: l })),
   ].sort((a, b) => {
-    const av = a.kind === 'position' ? a.data.value : (a.data.latest_value ?? 0)
-    const bv = b.kind === 'position' ? b.data.value : (b.data.latest_value ?? 0)
-    return bv - av
+    const val = (item: Item) => {
+      if (item.kind === 'live-position') return item.data.value
+      if (item.kind === 'manual-position') return item.data.current_value_eur ?? 0
+      if (item.kind === 'account') return item.data.latest_value ?? 0
+      return item.data.amount
+    }
+    return val(b) - val(a)
   })
 
   if (items.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        Nessun asset ancora.
-      </div>
-    )
+    return <div className="text-center py-8 text-muted-foreground text-sm">Nessun asset ancora.</div>
   }
 
   return (
     <div className="space-y-0.5">
       {items.map((item) => {
-        if (item.kind === 'position') {
+        if (item.kind === 'live-position') {
           const p = item.data
-          const label = p.display_name ?? p.isin
+          const label = p.display_name ?? p.isin ?? ''
           return (
-            <div
-              key={`pos-${p.id}`}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 bg-emerald-500/15 text-emerald-400">
-                {label.slice(0, 2).toUpperCase()}
-              </div>
+            <div key={`lp-${p.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
+              <LogoAvatar name={p.broker || label} fallbackClassName="bg-emerald-500/15 text-emerald-400" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{label}</p>
                 <p className="text-xs text-muted-foreground truncate">
@@ -88,56 +89,85 @@ export function AccountsList({
               </div>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 <EditPositionDialog position={p} />
-                <ConfirmDialog
-                  title="Elimina posizione"
-                  description={`Vuoi eliminare "${label}"? Questa azione non può essere annullata.`}
-                  trigger={DeleteTrigger}
-                  onConfirm={() => deletePosition(p.id)}
-                />
+                <ConfirmDialog title="Elimina posizione" description={`Vuoi eliminare "${label}"? Questa azione non può essere annullata.`} trigger={DeleteTrigger} onConfirm={() => deletePosition(p.id)} />
               </div>
               <div className="text-right shrink-0 group-hover:opacity-30 transition-opacity">
-                <p className="text-sm font-medium tabular-nums text-foreground">
-                  {formatCurrency(p.value, 'EUR')}
-                </p>
-                {p.changePercent !== undefined ? (
-                  <p className={`text-xs tabular-nums ${p.changePercent >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                    {p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">—</p>
-                )}
+                <p className="text-sm font-medium tabular-nums">{formatCurrency(p.value, 'EUR')}</p>
+                {p.changePercent !== undefined
+                  ? <p className={`text-xs tabular-nums ${p.changePercent >= 0 ? 'text-primary' : 'text-destructive'}`}>{p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%</p>
+                  : <p className="text-xs text-muted-foreground">—</p>}
               </div>
             </div>
           )
         }
 
-        const a = item.data
+        if (item.kind === 'manual-position') {
+          const p = item.data
+          const label = p.display_name ?? 'Asset'
+          return (
+            <div key={`mp-${p.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
+              <LogoAvatar name={p.broker || label} fallbackClassName="bg-violet-500/15 text-violet-400" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{label}</p>
+                <p className="text-xs text-muted-foreground">{p.broker || 'Manuale'}</p>
+              </div>
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <EditPositionDialog position={p} />
+                <ConfirmDialog title="Elimina posizione" description={`Vuoi eliminare "${label}"? Questa azione non può essere annullata.`} trigger={DeleteTrigger} onConfirm={() => deletePosition(p.id)} />
+              </div>
+              <div className="text-right shrink-0 group-hover:opacity-30 transition-opacity">
+                <p className="text-sm font-medium tabular-nums">{formatCurrency(p.current_value_eur, 'EUR')}</p>
+                <p className="text-xs text-muted-foreground">manuale</p>
+              </div>
+            </div>
+          )
+        }
+
+        if (item.kind === 'account') {
+          const a = item.data
+          return (
+            <div key={`acc-${a.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
+              <LogoAvatar name={a.name} fallbackClassName={ACCOUNT_ICON_BG[a.type]} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
+                <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
+              </div>
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <UpdateValueDialog account={a} />
+                <ConfirmDialog title="Elimina account" description={`Vuoi eliminare "${a.name}" e tutto il suo storico?`} trigger={DeleteTrigger} onConfirm={() => deleteAccount(a.id)} />
+              </div>
+              <div className="text-right shrink-0 group-hover:opacity-30 transition-opacity">
+                <p className="text-sm font-medium tabular-nums">{formatCurrency(a.latest_value, a.currency)}</p>
+                <p className="text-xs text-muted-foreground">—</p>
+              </div>
+            </div>
+          )
+        }
+
+        // liability
+        const l = item.data
+        const isDebt = l.type === 'debt'
         return (
-          <div
-            key={`acc-${a.id}`}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
-          >
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${ICON_BG[a.type]}`}>
-              {a.name.slice(0, 2).toUpperCase()}
+          <div key={`lib-${l.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
+              {isDebt ? '−' : '+'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
-              <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
+              <p className="text-sm font-medium text-foreground truncate">{l.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {isDebt ? 'Debito' : 'Credito'}
+                {l.counterparty && ` · ${l.counterparty}`}
+              </p>
             </div>
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-              <UpdateValueDialog account={a} />
-              <ConfirmDialog
-                title="Elimina account"
-                description={`Vuoi eliminare "${a.name}" e tutto il suo storico? Questa azione non può essere annullata.`}
-                trigger={DeleteTrigger}
-                onConfirm={() => deleteAccount(a.id)}
-              />
+              <EditLiabilityDialog liability={l} />
+              <ConfirmDialog title={`Elimina ${isDebt ? 'debito' : 'credito'}`} description={`Vuoi eliminare "${l.name}"? Questa azione non può essere annullata.`} trigger={DeleteTrigger} onConfirm={() => deleteLiability(l.id)} />
             </div>
             <div className="text-right shrink-0 group-hover:opacity-30 transition-opacity">
-              <p className="text-sm font-medium tabular-nums text-foreground">
-                {formatCurrency(a.latest_value, a.currency)}
+              <p className={`text-sm font-medium tabular-nums ${isDebt ? 'text-destructive' : 'text-primary'}`}>
+                {isDebt ? '−' : '+'}{formatCurrency(l.amount, l.currency)}
               </p>
-              <p className="text-xs text-muted-foreground">—</p>
+              <p className="text-xs text-muted-foreground">{isDebt ? 'debito' : 'credito'}</p>
             </div>
           </div>
         )
