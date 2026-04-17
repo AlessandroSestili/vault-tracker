@@ -78,7 +78,7 @@ export function AccountsList({
           const label = p.display_name ?? p.isin ?? ''
           return (
             <div key={`lp-${p.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
-              <LogoAvatar name={p.broker || label} fallbackClassName="bg-emerald-500/15 text-emerald-400" />
+              <LogoAvatar name={p.broker || label} fallbackClassName="bg-emerald-500/15 text-emerald-400" customImageUrl={p.image_url} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{label}</p>
                 <p className="text-xs text-muted-foreground truncate">
@@ -106,7 +106,7 @@ export function AccountsList({
           const label = p.display_name ?? 'Asset'
           return (
             <div key={`mp-${p.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
-              <LogoAvatar name={p.broker || label} fallbackClassName="bg-violet-500/15 text-violet-400" />
+              <LogoAvatar name={p.broker || label} fallbackClassName="bg-violet-500/15 text-violet-400" customImageUrl={p.image_url} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{label}</p>
                 <p className="text-xs text-muted-foreground">{p.broker || 'Manuale'}</p>
@@ -127,7 +127,7 @@ export function AccountsList({
           const a = item.data
           return (
             <div key={`acc-${a.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
-              <LogoAvatar name={a.name} fallbackClassName={ACCOUNT_ICON_BG[a.type]} />
+              <LogoAvatar name={a.name} fallbackClassName={ACCOUNT_ICON_BG[a.type]} customImageUrl={a.image_url} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
                 <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
@@ -149,9 +149,10 @@ export function AccountsList({
         const isDebt = l.type === 'debt'
         return (
           <div key={`lib-${l.id}`} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.04] transition-colors group">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
-              {isDebt ? '−' : '+'}
-            </div>
+            {l.image_url
+              ? <LogoAvatar name={l.name} fallbackClassName={isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'} customImageUrl={l.image_url} />
+              : <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>{isDebt ? '−' : '+'}</div>
+            }
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{l.name}</p>
               <p className="text-xs text-muted-foreground">

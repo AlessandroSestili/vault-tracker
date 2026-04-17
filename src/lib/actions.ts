@@ -16,11 +16,12 @@ export async function createAccount(data: {
   type: AccountType
   currency: string
   initialValue: number
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { data: account, error } = await supabase
     .from('accounts')
-    .insert({ name: data.name, type: data.type, currency: data.currency })
+    .insert({ name: data.name, type: data.type, currency: data.currency, image_url: data.imageUrl ?? null })
     .select()
     .single()
   if (error) throw new Error(error.message)
@@ -60,6 +61,7 @@ export async function createPosition(data: {
   units: number
   broker: string
   displayName?: string
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { error } = await supabase.from('positions').insert({
@@ -68,6 +70,7 @@ export async function createPosition(data: {
     broker: data.broker,
     display_name: data.displayName || null,
     is_manual: false,
+    image_url: data.imageUrl ?? null,
   })
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -78,6 +81,7 @@ export async function updatePosition(id: string, data: {
   units: number
   broker: string
   displayName?: string
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { error } = await supabase.from('positions').update({
@@ -85,6 +89,7 @@ export async function updatePosition(id: string, data: {
     units: data.units,
     broker: data.broker,
     display_name: data.displayName || null,
+    image_url: data.imageUrl ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -103,6 +108,7 @@ export async function createManualPosition(data: {
   displayName: string
   broker: string
   initialValueEur: number
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { data: pos, error } = await supabase
@@ -114,6 +120,7 @@ export async function createManualPosition(data: {
       display_name: data.displayName,
       is_manual: true,
       current_value_eur: data.initialValueEur,
+      image_url: data.imageUrl ?? null,
     })
     .select()
     .single()
@@ -133,12 +140,14 @@ export async function updateManualPosition(id: string, data: {
   displayName: string
   broker: string
   newValueEur: number
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { error } = await supabase.from('positions').update({
     display_name: data.displayName,
     broker: data.broker,
     current_value_eur: data.newValueEur,
+    image_url: data.imageUrl ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
 
@@ -161,6 +170,7 @@ export async function createLiability(data: {
   currency: string
   counterparty?: string
   note?: string
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { error } = await supabase.from('liabilities').insert({
@@ -170,6 +180,7 @@ export async function createLiability(data: {
     currency: data.currency,
     counterparty: data.counterparty || null,
     note: data.note || null,
+    image_url: data.imageUrl ?? null,
   })
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -182,6 +193,7 @@ export async function updateLiability(id: string, data: {
   currency: string
   counterparty?: string
   note?: string
+  imageUrl?: string | null
 }) {
   const supabase = await createClient()
   const { error } = await supabase.from('liabilities').update({
@@ -191,6 +203,7 @@ export async function updateLiability(id: string, data: {
     currency: data.currency,
     counterparty: data.counterparty || null,
     note: data.note || null,
+    image_url: data.imageUrl ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidateAll()

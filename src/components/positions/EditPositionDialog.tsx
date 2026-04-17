@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updatePosition, updateManualPosition } from '@/lib/actions'
+import { ImageUploader } from '@/components/ui/image-uploader'
 import { Pencil, Loader2 } from 'lucide-react'
 import type { Position } from '@/types'
 
@@ -33,6 +34,7 @@ type ManualData = z.output<typeof manualSchema>
 export function EditPositionDialog({ position }: { position: Position }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [imageUrl, setImageUrl] = useState<string | null>(position.image_url)
 
   const liveForm = useForm<LiveInput, unknown, LiveData>({
     resolver: zodResolver(liveSchema),
@@ -55,14 +57,14 @@ export function EditPositionDialog({ position }: { position: Position }) {
 
   function onSubmitLive(data: LiveData) {
     startTransition(async () => {
-      await updatePosition(position.id, data)
+      await updatePosition(position.id, { ...data, imageUrl })
       setOpen(false)
     })
   }
 
   function onSubmitManual(data: ManualData) {
     startTransition(async () => {
-      await updateManualPosition(position.id, { displayName: data.displayName, broker: data.broker, newValueEur: data.newValue })
+      await updateManualPosition(position.id, { displayName: data.displayName, broker: data.broker, newValueEur: data.newValue, imageUrl })
       setOpen(false)
     })
   }
@@ -81,6 +83,7 @@ export function EditPositionDialog({ position }: { position: Position }) {
 
         {!position.is_manual ? (
           <form onSubmit={liveForm.handleSubmit(onSubmitLive)} className="space-y-4 pt-2">
+            <ImageUploader value={imageUrl} onChange={setImageUrl} />
             <div className="space-y-1.5">
               <Label>ISIN / Ticker</Label>
               <Input className="uppercase font-mono" {...liveForm.register('isin')} />
@@ -105,6 +108,7 @@ export function EditPositionDialog({ position }: { position: Position }) {
           </form>
         ) : (
           <form onSubmit={manualForm.handleSubmit(onSubmitManual)} className="space-y-4 pt-2">
+            <ImageUploader value={imageUrl} onChange={setImageUrl} />
             <div className="space-y-1.5">
               <Label>Nome asset</Label>
               <Input {...manualForm.register('displayName')} />

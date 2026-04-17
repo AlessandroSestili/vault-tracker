@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createPosition, createManualPosition } from '@/lib/actions'
+import { ImageUploader } from '@/components/ui/image-uploader'
 import { Plus, Loader2 } from 'lucide-react'
 
 const liveSchema = z.object({
@@ -33,6 +34,7 @@ export function AddPositionDialog() {
   const [open, setOpen] = useState(false)
   const [isManual, setIsManual] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
 
   const liveForm = useForm<LiveInput, unknown, LiveData>({ resolver: zodResolver(liveSchema) })
   const manualForm = useForm<ManualInput, unknown, ManualData>({ resolver: zodResolver(manualSchema) })
@@ -40,20 +42,21 @@ export function AddPositionDialog() {
   function handleClose() {
     setOpen(false)
     setIsManual(false)
+    setImageUrl(null)
     liveForm.reset()
     manualForm.reset()
   }
 
   function onSubmitLive(data: LiveData) {
     startTransition(async () => {
-      await createPosition({ isin: data.isin, units: data.units, broker: data.broker, displayName: data.displayName })
+      await createPosition({ isin: data.isin, units: data.units, broker: data.broker, displayName: data.displayName, imageUrl })
       handleClose()
     })
   }
 
   function onSubmitManual(data: ManualData) {
     startTransition(async () => {
-      await createManualPosition({ displayName: data.displayName, broker: data.broker, initialValueEur: data.initialValue })
+      await createManualPosition({ displayName: data.displayName, broker: data.broker, initialValueEur: data.initialValue, imageUrl })
       handleClose()
     })
   }
@@ -90,6 +93,7 @@ export function AddPositionDialog() {
 
         {!isManual ? (
           <form onSubmit={liveForm.handleSubmit(onSubmitLive)} className="space-y-4">
+            <ImageUploader value={imageUrl} onChange={setImageUrl} />
             <div className="space-y-1.5">
               <Label>ISIN / Ticker</Label>
               <Input placeholder="IE00B3RBWM25" className="uppercase font-mono" {...liveForm.register('isin')} />
@@ -114,6 +118,7 @@ export function AddPositionDialog() {
           </form>
         ) : (
           <form onSubmit={manualForm.handleSubmit(onSubmitManual)} className="space-y-4">
+            <ImageUploader value={imageUrl} onChange={setImageUrl} />
             <div className="space-y-1.5">
               <Label>Nome asset</Label>
               <Input placeholder="es. Fondo Immobiliare XYZ" {...manualForm.register('displayName')} />

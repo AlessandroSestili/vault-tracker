@@ -5,6 +5,7 @@ export interface Account {
   name: string
   type: AccountType
   currency: string
+  image_url: string | null
   created_at: string
 }
 
@@ -16,6 +17,7 @@ export interface Position {
   display_name: string | null
   is_manual: boolean
   current_value_eur: number | null
+  image_url: string | null
   created_at: string
 }
 
@@ -40,5 +42,6 @@ export interface Liability {
   currency: string
   counterparty: string | null
   note: string | null
+  image_url: string | null
   created_at: string
 }

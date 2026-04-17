@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createLiability, updateLiability } from '@/lib/actions'
+import { ImageUploader } from '@/components/ui/image-uploader'
 import { Plus, Loader2, Pencil } from 'lucide-react'
 import type { Liability } from '@/types'
 
@@ -29,10 +30,14 @@ function LiabilityForm({
   defaultValues,
   onSubmit,
   isPending,
+  imageUrl,
+  onImageChange,
 }: {
   defaultValues?: Partial<FormInput>
   onSubmit: (data: FormData) => void
   isPending: boolean
+  imageUrl: string | null
+  onImageChange: (url: string | null) => void
 }) {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
@@ -41,6 +46,7 @@ function LiabilityForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+      <ImageUploader value={imageUrl} onChange={onImageChange} />
       <div className="space-y-1.5">
         <Label>Nome</Label>
         <Input placeholder="es. Mutuo casa, Prestito auto" {...register('name')} />
@@ -86,10 +92,12 @@ function LiabilityForm({
 export function AddLiabilityDialog() {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
 
   function onSubmit(data: FormData) {
     startTransition(async () => {
-      await createLiability(data)
+      await createLiability({ ...data, imageUrl })
+      setImageUrl(null)
       setOpen(false)
     })
   }
@@ -105,7 +113,7 @@ export function AddLiabilityDialog() {
         <DialogHeader>
           <DialogTitle>Aggiungi debito o credito</DialogTitle>
         </DialogHeader>
-        <LiabilityForm onSubmit={onSubmit} isPending={isPending} />
+        <LiabilityForm onSubmit={onSubmit} isPending={isPending} imageUrl={imageUrl} onImageChange={setImageUrl} />
       </DialogContent>
     </Dialog>
   )
@@ -114,10 +122,11 @@ export function AddLiabilityDialog() {
 export function EditLiabilityDialog({ liability }: { liability: Liability }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [imageUrl, setImageUrl] = useState<string | null>(liability.image_url)
 
   function onSubmit(data: FormData) {
     startTransition(async () => {
-      await updateLiability(liability.id, data)
+      await updateLiability(liability.id, { ...data, imageUrl })
       setOpen(false)
     })
   }
@@ -143,6 +152,8 @@ export function EditLiabilityDialog({ liability }: { liability: Liability }) {
           }}
           onSubmit={onSubmit}
           isPending={isPending}
+          imageUrl={imageUrl}
+          onImageChange={setImageUrl}
         />
       </DialogContent>
     </Dialog>

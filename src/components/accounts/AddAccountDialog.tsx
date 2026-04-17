@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createAccount } from '@/lib/actions'
 import { ACCOUNT_TYPE_OPTIONS } from '@/lib/account-config'
+import { ImageUploader } from '@/components/ui/image-uploader'
 import { Plus, Loader2 } from 'lucide-react'
 
 const schema = z.object({
@@ -26,6 +27,7 @@ type FormData = z.output<typeof schema>
 export function AddAccountDialog() {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
@@ -34,8 +36,9 @@ export function AddAccountDialog() {
 
   function onSubmit(data: FormData) {
     startTransition(async () => {
-      await createAccount(data)
+      await createAccount({ ...data, imageUrl })
       reset()
+      setImageUrl(null)
       setOpen(false)
     })
   }
@@ -52,6 +55,7 @@ export function AddAccountDialog() {
           <DialogTitle className="text-foreground">Nuovo account</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+          <ImageUploader value={imageUrl} onChange={setImageUrl} />
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input placeholder="es. Conto Corrente" {...register('name')} />
