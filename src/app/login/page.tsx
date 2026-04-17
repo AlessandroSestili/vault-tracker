@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8 px-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Vault</h1>
-          <p className="text-muted-foreground text-sm mt-1">Enter your password to continue</p>
+          <p className="text-muted-foreground text-sm mt-1">Inserisci la password per continuare</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -50,7 +50,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-destructive text-sm text-center">Incorrect password</p>
+            <p className="text-destructive text-sm text-center">Password errata</p>
           )}
 
           <button
@@ -58,7 +58,7 @@ export default function LoginPage() {
             disabled={loading || !password}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_oklch(0.75_0.18_152/0.3)] hover:shadow-[0_0_28px_oklch(0.75_0.18_152/0.5)]"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Accesso in corso…' : 'Accedi'}
           </button>
         </form>
       </div>

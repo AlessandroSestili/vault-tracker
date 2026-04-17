@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { addSnapshot } from '@/lib/actions'
 import type { AccountWithLatestSnapshot } from '@/types'
-import { Pencil } from 'lucide-react'
+import { Pencil, Loader2 } from 'lucide-react'
 
 const schema = z.object({
   value: z.string().transform((v) => parseFloat(v)).pipe(z.number().min(0, 'Must be ≥ 0')),
@@ -41,25 +41,25 @@ export function UpdateValueDialog({ account }: { account: AccountWithLatestSnaps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="text-zinc-600 hover:text-zinc-200 hover:bg-zinc-800" />}>
-        <Pencil className="w-4 h-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />}>
+        <Pencil className="w-3.5 h-3.5" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm bg-card border-border">
         <DialogHeader>
-          <DialogTitle>Update — {account.name}</DialogTitle>
+          <DialogTitle>Aggiorna — {account.name}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="value">New Value ({account.currency})</Label>
+            <Label htmlFor="value">Nuovo valore ({account.currency})</Label>
             <Input id="value" type="number" step="0.01" placeholder="0.00" {...register('value')} />
             {errors.value && <p className="text-xs text-destructive">{errors.value.message}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="note">Note <span className="text-zinc-500">(optional)</span></Label>
-            <Input id="note" placeholder="e.g. Monthly update" {...register('note')} />
+            <Label htmlFor="note">Nota <span className="text-muted-foreground">(opzionale)</span></Label>
+            <Input id="note" placeholder="es. Aggiornamento mensile" {...register('note')} />
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save'}
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva'}
           </Button>
         </form>
       </DialogContent>

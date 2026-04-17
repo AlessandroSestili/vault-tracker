@@ -5,8 +5,15 @@ export interface Account {
   name: string
   type: AccountType
   currency: string
-  isin: string | null
-  units: number | null
+  created_at: string
+}
+
+export interface Position {
+  id: string
+  isin: string
+  units: number
+  broker: string
+  display_name: string | null
   created_at: string
 }
 

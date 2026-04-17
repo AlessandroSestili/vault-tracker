@@ -4,37 +4,31 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { AccountType } from '@/types'
 
+function revalidateAll() {
+  revalidatePath('/')
+  revalidatePath('/analytics')
+}
+
 export async function createAccount(data: {
   name: string
   type: AccountType
   currency: string
   initialValue: number
-  isin?: string
-  units?: number
 }) {
   const supabase = await createClient()
-
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .insert({
-      name: data.name,
-      type: data.type,
-      currency: data.currency,
-      isin: data.isin || null,
-      units: data.units || null,
-    })
+    .insert({ name: data.name, type: data.type, currency: data.currency })
     .select()
     .single()
-
   if (accountError) throw new Error(accountError.message)
 
   const { error: snapshotError } = await supabase
     .from('snapshots')
     .insert({ account_id: account.id, value: data.initialValue })
-
   if (snapshotError) throw new Error(snapshotError.message)
 
-  revalidatePath('/')
+  revalidateAll()
 }
 
 export async function addSnapshot(data: {
@@ -43,22 +37,57 @@ export async function addSnapshot(data: {
   note?: string
 }) {
   const supabase = await createClient()
-
   const { error } = await supabase
     .from('snapshots')
     .insert({ account_id: data.accountId, value: data.value, note: data.note })
-
   if (error) throw new Error(error.message)
-
-  revalidatePath('/')
+  revalidateAll()
 }
 
 export async function deleteAccount(id: string) {
   const supabase = await createClient()
-
   const { error } = await supabase.from('accounts').delete().eq('id', id)
-
   if (error) throw new Error(error.message)
+  revalidateAll()
+}
 
-  revalidatePath('/')
+export async function createPosition(data: {
+  isin: string
+  units: number
+  broker: string
+  displayName?: string
+}) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('positions').insert({
+    isin: data.isin,
+    units: data.units,
+    broker: data.broker,
+    display_name: data.displayName || null,
+  })
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function updatePosition(id: string, data: {
+  isin: string
+  units: number
+  broker: string
+  displayName?: string
+}) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('positions').update({
+    isin: data.isin,
+    units: data.units,
+    broker: data.broker,
+    display_name: data.displayName || null,
+  }).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function deletePosition(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('positions').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidateAll()
 }
