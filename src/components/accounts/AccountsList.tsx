@@ -136,6 +136,9 @@ export function AccountsList({
           if (item.kind === 'live-position') {
             const p = item.data
             const label = p.display_name ?? p.isin ?? ''
+            const pctColor = p.changePercent !== undefined
+              ? (p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]')
+              : 'text-[#71717a]'
             return (
               <div key={`lp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
                 <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
@@ -151,17 +154,26 @@ export function AccountsList({
                     <span className="font-mono">{p.isin}</span>
                   </p>
                 </div>
-                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                {/* %change — colonna separata solo desktop */}
+                <div className="hidden md:block text-right shrink-0 ml-4 w-[56px]">
+                  <p className={`font-mono text-[12px] tabular-nums ${pctColor}`}>
+                    {p.changePercent !== undefined
+                      ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
+                      : '—'}
+                  </p>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
                   <DeskBtn onClick={() => setModal({ kind: 'edit-live', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
                 <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.value, 'EUR')}</p>
-                  {p.changePercent !== undefined
-                    ? <p className={`font-mono text-[10.5px] tabular-nums mt-0.5 ${p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}`}>
-                        {p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%
-                      </p>
-                    : <p className="font-mono text-[10.5px] text-[#71717a]">—</p>}
+                  {/* %change mobile — sotto il valore */}
+                  <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
+                    {p.changePercent !== undefined
+                      ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
+                      : '—'}
+                  </p>
                 </div>
               </div>
             )

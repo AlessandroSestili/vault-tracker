@@ -30,72 +30,109 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
   }
 
   const total = slices.reduce((s, x) => s + x.value, 0)
+  const maxPct = Math.max(...slices.map(s => s.pct))
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:gap-10">
-      {/* Donut */}
-      <div className="relative w-[200px] h-[200px] shrink-0 mx-auto md:mx-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={slices}
-              cx="50%"
-              cy="50%"
-              innerRadius="64%"
-              outerRadius="86%"
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              {slices.map((s) => (
-                <Cell key={s.type} fill={s.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null
-                const s = payload[0].payload as Slice
-                return (
-                  <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 text-sm shadow-xl">
-                    <p className="font-mono text-[10px] text-[#71717a] tracking-[1.5px] uppercase mb-0.5">{s.label}</p>
-                    <p className="font-mono font-medium text-[#fafafa] tabular-nums">{formatCurrency(s.value)}</p>
-                    <p className="font-mono text-[11px] text-[#71717a] mt-0.5">{s.pct.toFixed(1)}%</p>
-                  </div>
-                )
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="font-mono text-[10px] text-[#71717a] tracking-[1.5px] uppercase mb-1">Totale</p>
-          <p className="font-mono text-[18px] font-medium tabular-nums text-[#fafafa] tracking-[-0.3px]">
-            {formatCurrency(total)}
-          </p>
+    <div className="flex flex-col md:flex-row md:items-start md:gap-10">
+      {/* Donut — 200px mobile, 280px desktop */}
+      <div className="relative shrink-0 mx-auto md:mx-0"
+           style={{ width: 200, height: 200 }}
+      >
+        <div className="md:hidden absolute inset-0">
+          <DonutSvg slices={slices} size={200} thickness={14} total={total} />
         </div>
+        <div className="hidden md:block absolute inset-0" style={{ width: 280, height: 280 }}>
+          <DonutSvg slices={slices} size={280} thickness={18} total={total} />
+        </div>
+        {/* spacer per desktop */}
+        <div className="hidden md:block" style={{ width: 280, height: 280 }} />
       </div>
 
-      {/* Legend */}
-      <div className="flex-1 mt-6 md:mt-0 border-t border-white/[0.1] pt-1">
+      {/* Legend con barre proporzionali */}
+      <div className="flex-1 mt-5 md:mt-0 border-t border-white/[0.1] pt-1">
         {slices.map((s) => (
-          <div key={s.type} className="flex items-center py-3.5 border-b border-white/[0.04]">
-            <div
-              className="w-2 h-2 rounded-[2px] shrink-0 mr-3"
-              style={{ backgroundColor: s.color }}
-            />
-            <div className="flex-1">
-              <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px]">{s.label}</p>
-              <p className="font-mono text-[11px] text-[#71717a] mt-0.5 tracking-[0.3px] tabular-nums">
-                {s.pct.toFixed(1)}% del totale
-              </p>
+          <div key={s.type} className="py-3 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-2 h-2 rounded-[2px] shrink-0"
+                  style={{ backgroundColor: s.color }}
+                />
+                <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px]">{s.label}</span>
+              </div>
+              <div className="text-right">
+                <span className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa] whitespace-nowrap">
+                  {formatCurrency(s.value)}
+                </span>
+                <span className="font-mono text-[11px] text-[#71717a] ml-2 tabular-nums">
+                  {s.pct.toFixed(1)}%
+                </span>
+              </div>
             </div>
-            <p className="font-mono text-[13.5px] font-medium text-[#fafafa] tabular-nums tracking-[-0.2px] whitespace-nowrap ml-2">
-              {formatCurrency(s.value)}
-            </p>
+            {/* Barra proporzionale */}
+            <div className="h-[2px] rounded-full bg-white/[0.04] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${(s.pct / maxPct) * 100}%`,
+                  backgroundColor: s.color,
+                  opacity: 0.7,
+                }}
+              />
+            </div>
           </div>
         ))}
       </div>
     </div>
+  )
+}
+
+function DonutSvg({ slices, size, thickness, total }: {
+  slices: Slice[]
+  size: number
+  thickness: number
+  total: number
+}) {
+  const r = size / 2 - thickness / 2
+  const cx = size / 2
+  const cy = size / 2
+  const C = 2 * Math.PI * r
+  let offset = 0
+
+  return (
+    <svg width={size} height={size} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={thickness} />
+      {slices.map((s, i) => {
+        const len = (s.pct / 100) * C
+        const gap = 2
+        const dash = `${Math.max(0, len - gap)} ${C - len + gap}`
+        const el = (
+          <circle
+            key={i}
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={thickness}
+            strokeDasharray={dash}
+            strokeDashoffset={-offset}
+            strokeLinecap="butt"
+          />
+        )
+        offset += len
+        return el
+      })}
+      {/* Center label — counter-rotate */}
+      <g transform={`rotate(90 ${cx} ${cy})`}>
+        <text x={cx} y={cy - (size > 220 ? 8 : 6)} textAnchor="middle"
+          style={{ fill: '#71717a', fontSize: size > 220 ? 11 : 10, letterSpacing: 1.5, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+          TOTALE
+        </text>
+        <text x={cx} y={cy + (size > 220 ? 16 : 14)} textAnchor="middle"
+          style={{ fill: '#fafafa', fontSize: size > 220 ? 20 : 18, fontWeight: 500, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
+          {formatCurrency(total)}
+        </text>
+      </g>
+    </svg>
   )
 }
 

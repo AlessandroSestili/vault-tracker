@@ -126,17 +126,17 @@ export default async function HomePage() {
           <div className="w-full md:space-y-8">
 
             {/* Hero */}
-            <div className="pt-2 pb-5 md:px-0">
+            <div className="pt-2 md:pt-8 pb-5 md:px-0">
               <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-[18px] flex items-center justify-between">
                 <span>Portafoglio netto</span>
               </p>
 
               {/* Total */}
               <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                <span className="text-[44px] md:text-[52px] font-medium tracking-[-1.8px] tabular-nums text-[#fafafa] leading-none">
+                <span className="text-[44px] md:text-[56px] font-medium tracking-[-1.8px] md:tracking-[-2px] tabular-nums text-[#fafafa] leading-none">
                   {totalNumber}
                 </span>
-                <span className="text-[20px] font-normal text-[#a1a1aa] leading-none">€</span>
+                <span className="text-[20px] md:text-[24px] font-normal text-[#a1a1aa] leading-none">€</span>
               </div>
 
               {/* Stats row */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   AreaChart,
   Area,
@@ -8,6 +8,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  CartesianGrid,
 } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
 
@@ -28,12 +29,24 @@ function filterByPeriod(data: DataPoint[], period: Period): DataPoint[] {
   return data.filter((d) => new Date(d.day) >= cutoff)
 }
 
-function formatAxisDate(day: string): string {
-  return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(new Date(day))
+function formatAxisDate(day: string, period: Period): string {
+  const d = new Date(day)
+  if (period === '1S' || period === '1M') {
+    return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(d)
+  }
+  return new Intl.DateTimeFormat('it-IT', { month: 'short', year: '2-digit' }).format(d)
 }
 
 export function PortfolioChart({ data }: { data: DataPoint[] }) {
   const [period, setPeriod] = useState<Period>('1A')
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const filtered = useMemo(() => filterByPeriod(data, period), [data, period])
 
@@ -48,7 +61,7 @@ export function PortfolioChart({ data }: { data: DataPoint[] }) {
 
   return (
     <div>
-      {/* Delta row — shown above chart */}
+      {/* Delta row */}
       {hasData && filtered.length > 1 && (
         <div className="flex items-center gap-2 mb-3 px-1">
           <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0 }}>
@@ -68,34 +81,67 @@ export function PortfolioChart({ data }: { data: DataPoint[] }) {
 
       {/* Chart */}
       {!hasData ? (
-        <div className="h-[100px] flex items-center justify-center text-[#71717a] text-sm font-mono">
+        <div className="h-[100px] md:h-[200px] flex items-center justify-center text-[#71717a] text-sm font-mono">
           Nessun dato per questo periodo
         </div>
       ) : (
-        <div className="h-[100px] md:h-[120px]">
+        <div className="h-[100px] md:h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={filtered} margin={{ top: 8, right: 2, left: 2, bottom: 8 }}>
+            <AreaChart
+              data={filtered}
+              margin={isDesktop
+                ? { top: 8, right: 4, left: 0, bottom: 4 }
+                : { top: 8, right: 2, left: 2, bottom: 8 }
+              }
+            >
               <defs>
                 <linearGradient id="limeGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={LIME} stopOpacity={0.22} />
                   <stop offset="100%" stopColor={LIME} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" hide />
-              <YAxis hide domain={['auto', 'auto']} />
+
+              {isDesktop && (
+                <CartesianGrid
+                  vertical={false}
+                  stroke="rgba(255,255,255,0.04)"
+                  strokeDasharray="0"
+                />
+              )}
+
+              <XAxis
+                dataKey="day"
+                tickFormatter={(day) => formatAxisDate(day, period)}
+                tick={isDesktop ? { fontSize: 11, fill: '#52525b', fontFamily: 'JetBrains Mono, monospace' } : false}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                hide={!isDesktop}
+              />
+
+              <YAxis
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                tick={isDesktop ? { fontSize: 11, fill: '#52525b', fontFamily: 'JetBrains Mono, monospace' } : false}
+                axisLine={false}
+                tickLine={false}
+                width={isDesktop ? 36 : 0}
+                hide={!isDesktop}
+              />
+
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
                   const d = payload[0].payload as DataPoint
                   return (
-                    <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 text-sm shadow-xl">
-                      <p className="font-mono text-[10px] text-[#71717a]">{formatAxisDate(d.day)}</p>
-                      <p className="font-mono font-medium text-[#fafafa] tabular-nums">{formatCurrency(d.total)}</p>
+                    <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
+                      <p className="font-mono text-[10px] text-[#71717a] mb-0.5">{formatAxisDate(d.day, period)}</p>
+                      <p className="font-mono font-medium text-[#fafafa] tabular-nums text-[13px]">{formatCurrency(d.total)}</p>
                     </div>
                   )
                 }}
                 cursor={{ stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }}
               />
+
               <Area
                 type="monotone"
                 dataKey="total"
