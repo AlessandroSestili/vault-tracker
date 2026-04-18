@@ -8,9 +8,18 @@ import { UpdateValueDialog } from './UpdateValueDialog'
 import { EditPositionDialog } from '@/components/positions/EditPositionDialog'
 import { EditLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { deleteAccount, deletePosition, deleteLiability } from '@/lib/actions'
-import type { AccountWithLatestSnapshot, Position, Liability } from '@/types'
+import type { AccountWithLatestSnapshot, Position, Liability, LiabilitySubtype } from '@/types'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
-import { formatCurrency } from '@/lib/formats'
+import { formatCurrency, formatDate } from '@/lib/formats'
+import { liabilityBalance } from '@/lib/liability-calc'
+
+const SUBTYPE_LABEL: Record<LiabilitySubtype, string> = {
+  mortgage:       'Mutuo',
+  installment:    'Rata fissa',
+  informal_debt:  'Debito',
+  dated_credit:   'Credito',
+  informal_credit:'Credito',
+}
 
 const ACCOUNT_ICON_BG: Record<string, string> = {
   investment: 'bg-emerald-500/15 text-emerald-400',
@@ -156,8 +165,10 @@ export function AccountsList({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{l.name}</p>
               <p className="text-xs text-muted-foreground">
-                {isDebt ? 'Debito' : 'Credito'}
+                {SUBTYPE_LABEL[l.subtype]}
                 {l.counterparty && ` · ${l.counterparty}`}
+                {l.monthly_payment && ` · €${l.monthly_payment}/mese`}
+                {l.due_date && ` · scade ${formatDate(l.due_date)}`}
               </p>
             </div>
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
@@ -166,7 +177,7 @@ export function AccountsList({
             </div>
             <div className="text-right shrink-0 group-hover:opacity-30 transition-opacity">
               <p className={`text-sm font-medium tabular-nums ${isDebt ? 'text-destructive' : 'text-primary'}`}>
-                {isDebt ? '−' : '+'}{formatCurrency(l.amount, l.currency)}
+                {isDebt ? '−' : '+'}{formatCurrency(liabilityBalance(l), l.currency)}
               </p>
               <p className="text-xs text-muted-foreground">{isDebt ? 'debito' : 'credito'}</p>
             </div>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import type { AccountType } from '@/types'
+import type { AccountType, LiabilitySubtype } from '@/types'
 
 function revalidateAll() {
   revalidatePath('/')
@@ -163,24 +163,38 @@ export async function updateManualPosition(id: string, data: {
 
 // ── Liabilities ───────────────────────────────────────────────────────────────
 
+const DEBT_SUBTYPES: LiabilitySubtype[] = ['mortgage', 'installment', 'informal_debt']
+
 export async function createLiability(data: {
   name: string
-  type: 'debt' | 'credit'
-  amount: number
+  subtype: LiabilitySubtype
   currency: string
   counterparty?: string
   note?: string
   imageUrl?: string | null
+  amount?: number
+  currentBalance?: number
+  monthlyPayment?: number
+  interestRate?: number
+  nextPaymentDate?: string
+  dueDate?: string
 }) {
+  const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
   const { error } = await supabase.from('liabilities').insert({
     name: data.name,
-    type: data.type,
-    amount: data.amount,
+    type,
+    subtype: data.subtype,
+    amount: data.amount ?? data.currentBalance ?? 0,
     currency: data.currency,
     counterparty: data.counterparty || null,
     note: data.note || null,
     image_url: data.imageUrl ?? null,
+    current_balance: data.currentBalance ?? null,
+    monthly_payment: data.monthlyPayment ?? null,
+    interest_rate: data.interestRate ?? null,
+    next_payment_date: data.nextPaymentDate ?? null,
+    due_date: data.dueDate ?? null,
   })
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -188,22 +202,34 @@ export async function createLiability(data: {
 
 export async function updateLiability(id: string, data: {
   name: string
-  type: 'debt' | 'credit'
-  amount: number
+  subtype: LiabilitySubtype
   currency: string
   counterparty?: string
   note?: string
   imageUrl?: string | null
+  amount?: number
+  currentBalance?: number
+  monthlyPayment?: number
+  interestRate?: number
+  nextPaymentDate?: string
+  dueDate?: string
 }) {
+  const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
   const { error } = await supabase.from('liabilities').update({
     name: data.name,
-    type: data.type,
-    amount: data.amount,
+    type,
+    subtype: data.subtype,
+    amount: data.amount ?? data.currentBalance ?? 0,
     currency: data.currency,
     counterparty: data.counterparty || null,
     note: data.note || null,
     image_url: data.imageUrl ?? null,
+    current_balance: data.currentBalance ?? null,
+    monthly_payment: data.monthlyPayment ?? null,
+    interest_rate: data.interestRate ?? null,
+    next_payment_date: data.nextPaymentDate ?? null,
+    due_date: data.dueDate ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidateAll()

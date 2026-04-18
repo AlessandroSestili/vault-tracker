@@ -9,6 +9,7 @@ import type { AccountWithLatestSnapshot, Position, Liability } from '@/types'
 import type { PositionWithQuote } from '@/components/accounts/AccountsList'
 import { formatCurrency } from '@/lib/formats'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
+import { liabilityBalance } from '@/lib/liability-calc'
 
 async function getAccounts(): Promise<AccountWithLatestSnapshot[]> {
   const supabase = await createClient()
@@ -102,8 +103,8 @@ export default async function HomePage() {
   const liveTotal = positionsWithQuotes.reduce((s, p) => s + p.value, 0)
   const manualPositionsTotal = manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
   const accountsTotal = accounts.reduce((s, a) => s + (a.latest_value ?? 0), 0)
-  const debtsTotal = liabilities.filter((l) => l.type === 'debt').reduce((s, l) => s + l.amount, 0)
-  const creditsTotal = liabilities.filter((l) => l.type === 'credit').reduce((s, l) => s + l.amount, 0)
+  const debtsTotal = liabilities.filter((l) => l.type === 'debt').reduce((s, l) => s + liabilityBalance(l), 0)
+  const creditsTotal = liabilities.filter((l) => l.type === 'credit').reduce((s, l) => s + liabilityBalance(l), 0)
   const total = liveTotal + manualPositionsTotal + accountsTotal + creditsTotal - debtsTotal
 
   const todayPosSnaps = positionsWithQuotes.map((p) => ({ position_id: p.id, value_eur: p.value, recorded_at: new Date().toISOString().slice(0, 10) }))

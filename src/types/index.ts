@@ -34,14 +34,27 @@ export interface AccountWithLatestSnapshot extends Account {
   latest_recorded_at: string | null
 }
 
+export type LiabilitySubtype =
+  | 'mortgage'
+  | 'installment'
+  | 'informal_debt'
+  | 'dated_credit'
+  | 'informal_credit'
+
 export interface Liability {
   id: string
   name: string
   type: 'debt' | 'credit'
+  subtype: LiabilitySubtype
   amount: number
   currency: string
   counterparty: string | null
   note: string | null
   image_url: string | null
+  current_balance: number | null
+  monthly_payment: number | null
+  interest_rate: number | null
+  next_payment_date: string | null
+  due_date: string | null
   created_at: string
 }

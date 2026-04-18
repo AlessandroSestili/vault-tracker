@@ -9,6 +9,7 @@ import type { AccountWithLatestSnapshot, Position, AccountType, Liability } from
 import type { PositionWithQuote } from '@/components/accounts/AccountsList'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
+import { liabilityBalance } from '@/lib/liability-calc'
 import type { Slice } from '@/components/charts/AllocationChart'
 
 async function getAccounts(): Promise<AccountWithLatestSnapshot[]> {
@@ -54,8 +55,8 @@ export default async function AnalyticsPage() {
   const liveTotal = positionsWithQuotes.reduce((s, p) => s + p.value, 0)
   const manualTotal = manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
   const accountsTotal = accounts.reduce((s, a) => s + (a.latest_value ?? 0), 0)
-  const debtsTotal = liabilities.filter((l) => l.type === 'debt').reduce((s, l) => s + l.amount, 0)
-  const creditsTotal = liabilities.filter((l) => l.type === 'credit').reduce((s, l) => s + l.amount, 0)
+  const debtsTotal = liabilities.filter((l) => l.type === 'debt').reduce((s, l) => s + liabilityBalance(l), 0)
+  const creditsTotal = liabilities.filter((l) => l.type === 'credit').reduce((s, l) => s + liabilityBalance(l), 0)
   const total = liveTotal + manualTotal + accountsTotal + creditsTotal - debtsTotal
 
   const grouped: Partial<Record<AccountType | 'liability', number>> = {}
