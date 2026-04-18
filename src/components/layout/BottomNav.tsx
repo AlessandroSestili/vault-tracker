@@ -15,8 +15,13 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur-xl"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-white/[0.06]"
+      style={{
+        background: 'rgba(9,9,11,0.86)',
+        backdropFilter: 'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
     >
       <div className="flex h-[4.5rem] items-stretch">
         {tabs.map(({ href, label, Icon }) => {
@@ -25,15 +30,17 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 transition-colors ${
-                active ? 'text-primary' : 'text-muted-foreground active:text-foreground'
-              }`}
+              className="flex flex-1 flex-col items-center justify-center gap-1 transition-colors"
+              style={{ color: active ? '#fafafa' : '#71717a' }}
             >
               <Icon
-                className="w-[1.375rem] h-[1.375rem]"
-                strokeWidth={active ? 2.5 : 1.5}
+                className="w-[19px] h-[19px]"
+                strokeWidth={active ? 1.7 : 1.3}
               />
-              <span className={`text-[10px] font-medium tracking-wide ${active ? 'text-primary' : ''}`}>
+              <span
+                className="text-[10.5px] tracking-[0.1px]"
+                style={{ fontWeight: active ? 500 : 400 }}
+              >
                 {label}
               </span>
             </Link>

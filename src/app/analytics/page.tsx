@@ -1,10 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { AllocationChart, TYPE_COLORS } from '@/components/charts/AllocationChart'
-import { AddAccountDialog } from '@/components/accounts/AddAccountDialog'
-import { AddPositionDialog } from '@/components/positions/AddPositionDialog'
-import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
+import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import type { AccountWithLatestSnapshot, Position, AccountType, Liability } from '@/types'
 import type { PositionWithQuote } from '@/components/accounts/AccountsList'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
@@ -76,33 +74,40 @@ export default async function AnalyticsPage() {
       pct: total > 0 ? (value / total) * 100 : 0,
     }))
 
-  return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-bottom-nav md:pb-10">
-      <div className="flex flex-col md:grid md:grid-cols-[1fr_360px] gap-6 md:gap-10 items-start">
+  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 
-        {/* Left: chart */}
-        <div className="space-y-4 md:space-y-8">
-          <div className="space-y-1 px-1 md:px-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest">Analytics</p>
-            <p className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Allocazione patrimonio</p>
+  return (
+    <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
+      <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 items-start">
+
+        {/* Left: header + chart */}
+        <div className="md:space-y-8">
+          {/* Header */}
+          <div className="pt-2 pb-6 md:px-0">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-2">Analytics</p>
+            <p className="text-[26px] font-medium text-[#fafafa] tracking-[-0.6px] leading-[1.1]">
+              Allocazione patrimonio
+            </p>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-4 md:p-8">
+
+          {/* Donut + legend */}
+          <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-8">
             <AllocationChart slices={slices} />
           </div>
         </div>
 
         {/* Right: asset list */}
         <div className="space-y-3 md:sticky md:top-20">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-widest">Asset</span>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
+              Dettaglio asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>
+            </span>
+            <div className="flex items-center gap-1.5">
               <RefreshButton />
-              <AddLiabilityDialog />
-              <AddPositionDialog />
-              <AddAccountDialog />
+              <AddItemSheet />
             </div>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-2 md:p-3">
+          <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2">
             <AccountsList
               accounts={accounts}
               positionsWithQuotes={positionsWithQuotes}

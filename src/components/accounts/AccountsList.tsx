@@ -26,12 +26,23 @@ const SUBTYPE_LABEL: Record<LiabilitySubtype, string> = {
   informal_credit: 'Credito',
 }
 
-const ACCOUNT_ICON_BG: Record<string, string> = {
-  investment: 'bg-emerald-500/15 text-emerald-400',
-  cash:       'bg-sky-500/15 text-sky-400',
-  pension:    'bg-violet-500/15 text-violet-400',
-  crypto:     'bg-orange-500/15 text-orange-400',
-  other:      'bg-zinc-500/15 text-zinc-400',
+// Category dot colors
+const CAT_DOT = {
+  invest:  'oklch(0.82 0.18 130)',  // lime
+  cash:    'oklch(0.78 0.14 220)',  // sky
+  pension: 'oklch(0.72 0.18 300)', // violet
+  crypto:  'oklch(0.75 0.16 50)',  // amber
+  other:   'oklch(0.72 0.02 260)', // gray
+  debt:    '#ef4444',
+  credit:  'oklch(0.82 0.18 130)',
+} as const
+
+const ACCOUNT_TYPE_TO_CAT: Record<string, keyof typeof CAT_DOT> = {
+  investment: 'invest',
+  cash:       'cash',
+  pension:    'pension',
+  crypto:     'crypto',
+  other:      'other',
 }
 
 type ActiveModal =
@@ -52,7 +63,7 @@ function DeskBtn({ onClick, children, danger }: { onClick: () => void; children:
       onClick={(e) => { e.stopPropagation(); onClick() }}
       className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
         danger
-          ? 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+          ? 'text-muted-foreground hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.1)]'
           : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
       }`}
     >
@@ -108,38 +119,49 @@ export function AccountsList({
   })
 
   if (items.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground text-sm">Nessun asset ancora.</div>
+    return (
+      <div className="text-center py-8 font-mono text-[12px] text-[#52525b] tracking-[0.4px]">
+        Nessun asset ancora.
+      </div>
+    )
   }
 
-  const cardClass = 'flex items-center gap-3 px-3 py-4 md:py-3 rounded-xl hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors group cursor-pointer md:cursor-default'
+  const rowClass = 'flex items-center py-[14px] md:py-[10px] border-b border-white/[0.04] cursor-pointer md:cursor-default active:bg-white/[0.02] transition-colors group'
 
   return (
     <>
-      <div className="space-y-0.5">
+      <div>
         {items.map((item) => {
+
           if (item.kind === 'live-position') {
             const p = item.data
             const label = p.display_name ?? p.isin ?? ''
             return (
-              <div key={`lp-${p.id}`} className={cardClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
-                <LogoAvatar name={p.broker || label} fallbackClassName="bg-emerald-500/15 text-emerald-400" customImageUrl={p.image_url} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{label}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+              <div key={`lp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
+                <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</span>
+                    <span className="font-mono text-[9px] tracking-[0.8px] uppercase text-[var(--primary)] border border-[var(--primary)] rounded-[3px] px-[5px] py-[2px] leading-none opacity-80 shrink-0">
+                      live
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
                     {p.broker && <span>{p.broker} · </span>}
                     <span className="font-mono">{p.isin}</span>
-                    <span className="ml-1.5 text-primary/70">· live</span>
                   </p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <DeskBtn onClick={() => setModal({ kind: 'edit-live', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
-                <div className="text-right shrink-0 md:group-hover:opacity-30 transition-opacity">
-                  <p className="text-sm font-medium tabular-nums">{formatCurrency(p.value, 'EUR')}</p>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.value, 'EUR')}</p>
                   {p.changePercent !== undefined
-                    ? <p className={`text-xs tabular-nums ${p.changePercent >= 0 ? 'text-primary' : 'text-destructive'}`}>{p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%</p>
-                    : <p className="text-xs text-muted-foreground">—</p>}
+                    ? <p className={`font-mono text-[10.5px] tabular-nums mt-0.5 ${p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}`}>
+                        {p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%
+                      </p>
+                    : <p className="font-mono text-[10.5px] text-[#71717a]">—</p>}
                 </div>
               </div>
             )
@@ -149,19 +171,19 @@ export function AccountsList({
             const p = item.data
             const label = p.display_name ?? 'Asset'
             return (
-              <div key={`mp-${p.id}`} className={cardClass} onClick={() => openSheet({ kind: 'manual-position', data: p })}>
-                <LogoAvatar name={p.broker || label} fallbackClassName="bg-violet-500/15 text-violet-400" customImageUrl={p.image_url} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{label}</p>
-                  <p className="text-xs text-muted-foreground">{p.broker || 'Manuale'}</p>
+              <div key={`mp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'manual-position', data: p })}>
+                <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</p>
+                  <p className="text-[12px] text-[#71717a] mt-0.5">{p.broker || 'Manuale'}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <DeskBtn onClick={() => setModal({ kind: 'edit-manual', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-manual', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
-                <div className="text-right shrink-0 md:group-hover:opacity-30 transition-opacity">
-                  <p className="text-sm font-medium tabular-nums">{formatCurrency(p.current_value_eur, 'EUR')}</p>
-                  <p className="text-xs text-muted-foreground">manuale</p>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.current_value_eur, 'EUR')}</p>
+                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">manuale</p>
                 </div>
               </div>
             )
@@ -169,21 +191,22 @@ export function AccountsList({
 
           if (item.kind === 'account') {
             const a = item.data
+            const catKey = ACCOUNT_TYPE_TO_CAT[a.type] ?? 'other'
             return (
-              <div key={`acc-${a.id}`} className={cardClass} onClick={() => openSheet({ kind: 'account', data: a })}>
-                <LogoAvatar name={a.name} fallbackClassName={ACCOUNT_ICON_BG[a.type]} customImageUrl={a.image_url} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
+              <div key={`acc-${a.id}`} className={rowClass} onClick={() => openSheet({ kind: 'account', data: a })}>
+                <LogoAvatar name={a.name} catColor={CAT_DOT[catKey]} customImageUrl={a.image_url} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{a.name}</p>
+                  <p className="text-[12px] text-[#71717a] mt-0.5">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <DeskBtn onClick={() => setModal({ kind: 'edit-account', data: a })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'update-value', data: a })}><span className="text-xs font-medium">€</span></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-account', data: a })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
-                <div className="text-right shrink-0 md:group-hover:opacity-30 transition-opacity">
-                  <p className="text-sm font-medium tabular-nums">{formatCurrency(a.latest_value, a.currency)}</p>
-                  <p className="text-xs text-muted-foreground">—</p>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(a.latest_value, a.currency)}</p>
+                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">—</p>
                 </div>
               </div>
             )
@@ -192,15 +215,17 @@ export function AccountsList({
           // liability
           const l = item.data
           const isDebt = l.type === 'debt'
+          const balance = liabilityBalance(l)
           return (
-            <div key={`lib-${l.id}`} className={cardClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
-              {l.image_url
-                ? <LogoAvatar name={l.name} fallbackClassName={isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'} customImageUrl={l.image_url} />
-                : <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isDebt ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>{isDebt ? '−' : '+'}</div>
-              }
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{l.name}</p>
-                <p className="text-xs text-muted-foreground">
+            <div key={`lib-${l.id}`} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
+              <LogoAvatar
+                name={l.name}
+                catColor={isDebt ? CAT_DOT.debt : CAT_DOT.credit}
+                customImageUrl={l.image_url}
+              />
+              <div className="flex-1 min-w-0 ml-3">
+                <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
+                <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
                   {SUBTYPE_LABEL[l.subtype]}
                   {l.counterparty && ` · ${l.counterparty}`}
                   {l.monthly_payment && ` · €${l.monthly_payment}/mese`}
@@ -211,11 +236,11 @@ export function AccountsList({
                 <DeskBtn onClick={() => setModal({ kind: 'edit-liability', data: l })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                 <DeskBtn onClick={() => setModal({ kind: 'delete-liability', data: l })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
               </div>
-              <div className="text-right shrink-0 md:group-hover:opacity-30 transition-opacity">
-                <p className={`text-sm font-medium tabular-nums ${isDebt ? 'text-destructive' : 'text-primary'}`}>
-                  {isDebt ? '−' : '+'}{formatCurrency(liabilityBalance(l), l.currency)}
+              <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                <p className={`font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] ${isDebt ? 'text-[#ef4444]' : 'text-[var(--primary)]'}`}>
+                  {isDebt ? '−' : '+'}{formatCurrency(balance, l.currency)}
                 </p>
-                <p className="text-xs text-muted-foreground">{isDebt ? 'debito' : 'credito'}</p>
+                <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">{isDebt ? 'debito' : 'credito'}</p>
               </div>
             </div>
           )

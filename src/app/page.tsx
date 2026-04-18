@@ -111,50 +111,87 @@ export default async function HomePage() {
   ))
   const chartData = computeDailyTotals(accountSnapshots, allPosSnaps)
 
+  // Format total: split number from € symbol
+  const totalFormatted = formatCurrency(total)
+  const totalNumber = totalFormatted.replace(/\s*€$/, '')
+
+  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
+
   return (
     <>
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-bottom-nav md:pb-10">
-      <div className="flex flex-col md:grid md:grid-cols-[1fr_360px] gap-6 md:gap-10 items-start">
+      <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
+        <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 items-start">
 
-        {/* Left: hero + chart */}
-        <div className="space-y-4 md:space-y-8">
-          <div className="space-y-1 px-1 md:px-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest">Portafoglio</p>
-            <p className="text-4xl md:text-5xl font-semibold tracking-tight tabular-nums text-foreground">{formatCurrency(total)}</p>
-            {(positionsWithQuotes.length > 0 || debtsTotal > 0) && (
-              <p className="text-xs text-muted-foreground">
-                {positionsWithQuotes.length > 0 && <span className="text-primary/70">{positionsWithQuotes.length} live · EUR/USD {eurUsdRate.toFixed(4)}</span>}
-                {debtsTotal > 0 && <span className="text-destructive/70 ml-2">−{formatCurrency(debtsTotal)} debiti</span>}
+          {/* Left: hero + chart */}
+          <div className="md:space-y-8">
+
+            {/* Hero */}
+            <div className="pt-2 pb-5 md:px-0">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-[18px] flex items-center justify-between">
+                <span>Portafoglio netto</span>
               </p>
-            )}
-          </div>
-          <div className="rounded-2xl bg-card border border-border p-4 md:p-6">
-            <PortfolioChart data={chartData} />
-          </div>
-        </div>
 
-        {/* Right: asset list */}
-        <div className="space-y-3 md:sticky md:top-20">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-widest">Asset</span>
-            <div className="flex items-center gap-1">
-              <RefreshButton />
-              <AddItemSheet />
+              {/* Total */}
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span className="text-[44px] md:text-[52px] font-medium tracking-[-1.8px] tabular-nums text-[#fafafa] leading-none">
+                  {totalNumber}
+                </span>
+                <span className="text-[20px] font-normal text-[#a1a1aa] leading-none">€</span>
+              </div>
+
+              {/* Stats row */}
+              <div className="flex items-center gap-5 mt-[18px] font-mono text-[10.5px] tracking-[0.4px] flex-wrap">
+                {positionsWithQuotes.length > 0 && (
+                  <span className="text-[#71717a]">
+                    <span className="text-[var(--primary)] mr-1">●</span>
+                    {positionsWithQuotes.length} live
+                  </span>
+                )}
+                <span className="text-[#71717a]">
+                  EUR/USD <span className="text-[#a1a1aa] tabular-nums">{eurUsdRate.toFixed(4)}</span>
+                </span>
+                {debtsTotal > 0 && (
+                  <span className="text-[#ef4444] tabular-nums">
+                    Debiti {formatCurrency(debtsTotal)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Chart — edge-to-edge on mobile */}
+            <div className="-mx-5 px-5 md:mx-0 md:px-0 md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
+              <PortfolioChart data={chartData} />
             </div>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-2 md:p-3">
-            <AccountsList
-              accounts={accounts}
-              positionsWithQuotes={positionsWithQuotes}
-              manualPositions={manualPositions}
-              liabilities={liabilities}
-            />
-          </div>
-        </div>
 
+          {/* Right: asset list */}
+          <div className="space-y-3 md:sticky md:top-20">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
+                Asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <RefreshButton />
+                <AddItemSheet />
+              </div>
+            </div>
+            <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2">
+              <AccountsList
+                accounts={accounts}
+                positionsWithQuotes={positionsWithQuotes}
+                manualPositions={manualPositions}
+                liabilities={liabilities}
+              />
+            </div>
+            {/* Timestamp — mobile only */}
+            <p className="md:hidden text-center font-mono text-[10px] tracking-[0.4px] text-[#52525b] pt-2 pb-1">
+              ULTIMO AGGIORNAMENTO · {new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} · {new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+
+        </div>
       </div>
-    </div>
-    <MobileFab />
+      <MobileFab />
     </>
   )
 }

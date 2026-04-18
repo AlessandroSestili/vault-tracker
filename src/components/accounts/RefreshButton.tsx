@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
-import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 
 export function RefreshButton() {
@@ -10,15 +9,13 @@ export function RefreshButton() {
   const [isPending, startTransition] = useTransition()
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+    <button
       onClick={() => startTransition(() => router.refresh())}
       disabled={isPending}
-      title="Refresh prices"
+      title="Aggiorna prezzi"
+      className="w-7 h-7 flex items-center justify-center rounded-full text-[#71717a] hover:text-[#fafafa] transition-colors disabled:opacity-40"
     >
-      <RefreshCw className={`w-4 h-4 ${isPending ? 'animate-spin' : ''}`} />
-    </Button>
+      <RefreshCw className={`w-3.5 h-3.5 ${isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+    </button>
   )
 }

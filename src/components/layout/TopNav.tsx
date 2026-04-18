@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { Search, User, LogOut } from 'lucide-react'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -34,29 +34,44 @@ export function TopNav() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border"
+      className="fixed top-0 left-0 right-0 z-50 bg-[rgba(9,9,11,0.86)] backdrop-blur-xl border-b border-white/[0.06]"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="h-14 flex items-center px-4 md:px-8">
+      <div className="h-14 flex items-center px-5 md:px-8">
 
-        {/* Mobile: logo centrato + logout a sinistra */}
+        {/* Mobile: V badge + Vault left, search + user right */}
         <div className="flex md:hidden items-center w-full">
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-            title="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-          <div className="flex-1 text-center">
-            <span className="text-sm font-semibold tracking-tight text-foreground">Vault</span>
+          <div className="flex items-center gap-2 flex-1">
+            <div className="w-[18px] h-[18px] rounded-[4px] bg-[var(--primary)] flex items-center justify-center">
+              <span className="font-mono text-[11px] font-bold text-[#09090b] leading-none">V</span>
+            </div>
+            <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
           </div>
-          <div className="w-8" />
+          <div className="flex items-center gap-2">
+            <button
+              className="w-[34px] h-[34px] rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717a]"
+              aria-label="Cerca"
+            >
+              <Search className="w-[15px] h-[15px]" strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-[34px] h-[34px] rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717a]"
+              aria-label="Profilo / Esci"
+            >
+              <User className="w-[15px] h-[15px]" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
-        {/* Desktop: logo sx, nav center, logout dx */}
+        {/* Desktop: logo left, nav center, logout right */}
         <div className="hidden md:flex flex-1 items-center">
-          <span className="text-sm font-semibold tracking-tight text-foreground">Vault</span>
+          <div className="flex items-center gap-2">
+            <div className="w-[18px] h-[18px] rounded-[4px] bg-[var(--primary)] flex items-center justify-center">
+              <span className="font-mono text-[11px] font-bold text-[#09090b] leading-none">V</span>
+            </div>
+            <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
+          </div>
         </div>
         <div className="hidden md:flex items-center gap-1">
           {navLink('/', 'Portafoglio')}
