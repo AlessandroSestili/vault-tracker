@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { addSnapshot } from '@/lib/actions'
 import type { AccountWithLatestSnapshot } from '@/types'
-import { Pencil, Loader2 } from 'lucide-react'
+import { RefreshCcw, Loader2 } from 'lucide-react'
 
 const schema = z.object({
   value: z.string().transform((v) => parseFloat(v)).pipe(z.number().min(0, 'Must be ≥ 0')),
@@ -41,8 +41,8 @@ export function UpdateValueDialog({ account }: { account: AccountWithLatestSnaps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />}>
-        <Pencil className="w-3.5 h-3.5" />
+      <DialogTrigger render={<Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" title="Aggiorna valore" />}>
+        <RefreshCcw className="w-3.5 h-3.5" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm bg-card border-border">
         <DialogHeader>

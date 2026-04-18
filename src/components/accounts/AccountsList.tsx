@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { UpdateValueDialog } from './UpdateValueDialog'
+import { EditAccountDialog } from './EditAccountDialog'
 import { EditPositionDialog } from '@/components/positions/EditPositionDialog'
 import { EditLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { deleteAccount, deletePosition, deleteLiability } from '@/lib/actions'
@@ -142,6 +143,7 @@ export function AccountsList({
                 <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
               </div>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <EditAccountDialog account={a} />
                 <UpdateValueDialog account={a} />
                 <ConfirmDialog title="Elimina account" description={`Vuoi eliminare "${a.name}" e tutto il suo storico?`} trigger={DeleteTrigger} onConfirm={() => deleteAccount(a.id)} />
               </div>

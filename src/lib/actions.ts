@@ -47,6 +47,23 @@ export async function addSnapshot(data: {
   revalidateAll()
 }
 
+export async function updateAccount(id: string, data: {
+  name: string
+  type: AccountType
+  currency: string
+  imageUrl?: string | null
+}) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('accounts').update({
+    name: data.name,
+    type: data.type,
+    currency: data.currency,
+    image_url: data.imageUrl ?? null,
+  }).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
 export async function deleteAccount(id: string) {
   const supabase = await createClient()
   const { error } = await supabase.from('accounts').delete().eq('id', id)
