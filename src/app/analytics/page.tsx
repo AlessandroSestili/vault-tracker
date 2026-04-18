@@ -78,10 +78,10 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
-      <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 items-start">
+      <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
 
         {/* Left: header + chart */}
-        <div className="md:space-y-8">
+        <div className="w-full md:space-y-8">
           {/* Header */}
           <div className="pt-2 pb-6 md:px-0">
             <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-2">Analytics</p>
@@ -97,7 +97,7 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Right: asset list */}
-        <div className="space-y-3 md:sticky md:top-20">
+        <div className="w-full space-y-3 md:sticky md:top-20">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
               Dettaglio asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>

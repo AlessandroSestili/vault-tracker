@@ -126,7 +126,7 @@ export function AccountsList({
     )
   }
 
-  const rowClass = 'flex items-center py-[14px] md:py-[10px] border-b border-white/[0.04] cursor-pointer md:cursor-default active:bg-white/[0.02] transition-colors group'
+  const rowClass = 'flex items-center py-[14px] md:py-[10px] border-b border-white/[0.04] cursor-pointer md:cursor-default active:bg-white/[0.02] transition-colors group overflow-hidden'
 
   return (
     <>

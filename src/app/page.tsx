@@ -120,10 +120,10 @@ export default async function HomePage() {
   return (
     <>
       <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
-        <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 items-start">
+        <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
 
           {/* Left: hero + chart */}
-          <div className="md:space-y-8">
+          <div className="w-full md:space-y-8">
 
             {/* Hero */}
             <div className="pt-2 pb-5 md:px-0">
@@ -158,14 +158,14 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Chart — edge-to-edge on mobile */}
-            <div className="-mx-5 px-5 md:mx-0 md:px-0 md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
+            {/* Chart */}
+            <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
               <PortfolioChart data={chartData} />
             </div>
           </div>
 
           {/* Right: asset list */}
-          <div className="space-y-3 md:sticky md:top-20">
+          <div className="w-full space-y-3 md:sticky md:top-20">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
                 Asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>
