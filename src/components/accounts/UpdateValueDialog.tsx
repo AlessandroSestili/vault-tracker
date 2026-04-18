@@ -20,15 +20,25 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>
 type FormData = z.output<typeof schema>
 
-export function UpdateValueDialog({ account }: { account: AccountWithLatestSnapshot }) {
-  const [open, setOpen] = useState(false)
+export function UpdateValueDialog({
+  account,
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  account: AccountWithLatestSnapshot
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      value: account.latest_value?.toString() ?? '0',
-    },
+    defaultValues: { value: account.latest_value?.toString() ?? '0' },
   })
 
   function onSubmit(data: FormData) {
@@ -41,9 +51,13 @@ export function UpdateValueDialog({ account }: { account: AccountWithLatestSnaps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" title="Aggiorna valore" />}>
-        <RefreshCcw className="w-3.5 h-3.5" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" title="Aggiorna valore" />
+        }>
+          <RefreshCcw className="w-3.5 h-3.5" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Aggiorna — {account.name}</DialogTitle>

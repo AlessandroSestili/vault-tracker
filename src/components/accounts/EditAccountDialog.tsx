@@ -24,18 +24,26 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>
 type FormData = z.output<typeof schema>
 
-export function EditAccountDialog({ account }: { account: AccountWithLatestSnapshot }) {
-  const [open, setOpen] = useState(false)
+export function EditAccountDialog({
+  account,
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  account: AccountWithLatestSnapshot
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(account.image_url)
 
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-    },
+    defaultValues: { name: account.name, type: account.type, currency: account.currency },
   })
 
   function onSubmit(data: FormData) {
@@ -47,24 +55,24 @@ export function EditAccountDialog({ account }: { account: AccountWithLatestSnaps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
-      }>
-        <Pencil className="w-3.5 h-3.5" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
+        }>
+          <Pencil className="w-3.5 h-3.5" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Modifica account</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <ImageUploader value={imageUrl} onChange={setImageUrl} />
-
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input {...register('name')} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
@@ -83,7 +91,6 @@ export function EditAccountDialog({ account }: { account: AccountWithLatestSnaps
               {errors.currency && <p className="text-xs text-destructive">{errors.currency.message}</p>}
             </div>
           </div>
-
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva modifiche'}
           </Button>

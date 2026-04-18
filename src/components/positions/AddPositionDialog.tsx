@@ -30,11 +30,21 @@ type LiveData = z.output<typeof liveSchema>
 type ManualInput = z.input<typeof manualSchema>
 type ManualData = z.output<typeof manualSchema>
 
-export function AddPositionDialog() {
-  const [open, setOpen] = useState(false)
+export function AddPositionDialog({
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+} = {}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isManual, setIsManual] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   const liveForm = useForm<LiveInput, unknown, LiveData>({ resolver: zodResolver(liveSchema) })
   const manualForm = useForm<ManualInput, unknown, ManualData>({ resolver: zodResolver(manualSchema) })
@@ -63,17 +73,18 @@ export function AddPositionDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else setOpen(true) }}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" title="Aggiungi posizione" />
-      }>
-        <Plus className="w-4 h-4" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" title="Aggiungi posizione" />
+        }>
+          <Plus className="w-4 h-4" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Aggiungi posizione</DialogTitle>
         </DialogHeader>
 
-        {/* Toggle */}
         <div className="flex rounded-xl bg-secondary p-1 gap-1">
           <button
             type="button"

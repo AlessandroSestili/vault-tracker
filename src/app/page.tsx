@@ -1,12 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import { AddAccountDialog } from '@/components/accounts/AddAccountDialog'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
-import { AddPositionDialog } from '@/components/positions/AddPositionDialog'
-import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
+import { AddItemSheet } from '@/components/accounts/AddItemSheet'
+import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
-import type { AccountWithLatestSnapshot, Position, Liability } from '@/types'
-import type { PositionWithQuote } from '@/components/accounts/AccountsList'
+import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote } from '@/types'
 import { formatCurrency } from '@/lib/formats'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
 import { liabilityBalance } from '@/lib/liability-calc'
@@ -114,6 +112,7 @@ export default async function HomePage() {
   const chartData = computeDailyTotals(accountSnapshots, allPosSnaps)
 
   return (
+    <>
     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-bottom-nav md:pb-10">
       <div className="flex flex-col md:grid md:grid-cols-[1fr_360px] gap-6 md:gap-10 items-start">
 
@@ -140,9 +139,7 @@ export default async function HomePage() {
             <span className="text-xs text-muted-foreground uppercase tracking-widest">Asset</span>
             <div className="flex items-center gap-1">
               <RefreshButton />
-              <AddLiabilityDialog />
-              <AddPositionDialog />
-              <AddAccountDialog />
+              <AddItemSheet />
             </div>
           </div>
           <div className="rounded-2xl bg-card border border-border p-2 md:p-3">
@@ -157,5 +154,7 @@ export default async function HomePage() {
 
       </div>
     </div>
+    <MobileFab />
+    </>
   )
 }

@@ -29,18 +29,20 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
     )
   }
 
+  const total = slices.reduce((s, x) => s + x.value, 0)
+
   return (
-    <div className="flex items-center gap-10">
+    <div className="flex flex-col md:flex-row md:items-center md:gap-10">
       {/* Donut */}
-      <div className="relative w-72 h-72 shrink-0">
+      <div className="relative w-48 h-48 md:w-72 md:h-72 shrink-0 mx-auto md:mx-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={slices}
               cx="50%"
               cy="50%"
-              innerRadius={90}
-              outerRadius={130}
+              innerRadius="60%"
+              outerRadius="85%"
               paddingAngle={2}
               dataKey="value"
               strokeWidth={0}
@@ -67,14 +69,14 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
         {/* Center label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <p className="text-xs text-muted-foreground">Totale</p>
-          <p className="text-xl font-semibold tabular-nums text-foreground">
-            {formatCurrency(slices.reduce((s, x) => s + x.value, 0))}
+          <p className="text-base md:text-xl font-semibold tabular-nums text-foreground">
+            {formatCurrency(total)}
           </p>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-3 mt-6 md:mt-0">
         {slices.map((s) => (
           <div key={s.type} className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">

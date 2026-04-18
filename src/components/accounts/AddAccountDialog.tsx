@@ -13,6 +13,7 @@ import { createAccount } from '@/lib/actions'
 import { ACCOUNT_TYPE_OPTIONS } from '@/lib/account-config'
 import { ImageUploader } from '@/components/ui/image-uploader'
 import { Plus, Loader2 } from 'lucide-react'
+import type { AccountType } from '@/types'
 
 const schema = z.object({
   name: z.string().min(1, 'Obbligatorio'),
@@ -24,10 +25,23 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>
 type FormData = z.output<typeof schema>
 
-export function AddAccountDialog() {
-  const [open, setOpen] = useState(false)
+export function AddAccountDialog({
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+} = {}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => {
+    if (controlled) propOnOpenChange?.(v)
+    else setSelfOpen(v)
+  }
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
@@ -44,12 +58,14 @@ export function AddAccountDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" />
-      }>
-        <Plus className="w-4 h-4" />
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { reset(); setImageUrl(null) } setOpen(v) }}>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" />
+        }>
+          <Plus className="w-4 h-4" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Nuovo account</DialogTitle>
@@ -61,11 +77,10 @@ export function AddAccountDialog() {
             <Input placeholder="es. Conto Corrente" {...register('name')} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
-              <Select defaultValue="cash" onValueChange={(v) => setValue('type', v as FormData['type'])}>
+              <Select defaultValue="cash" onValueChange={(v) => setValue('type', v as AccountType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-card border-border">
                   {ACCOUNT_TYPE_OPTIONS.map((t) => (
@@ -80,13 +95,11 @@ export function AddAccountDialog() {
               {errors.currency && <p className="text-xs text-destructive">{errors.currency.message}</p>}
             </div>
           </div>
-
           <div className="space-y-1.5">
             <Label>Valore attuale</Label>
             <Input type="number" step="0.01" placeholder="0.00" {...register('initialValue')} />
             {errors.initialValue && <p className="text-xs text-destructive">{errors.initialValue.message}</p>}
           </div>
-
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva'}
           </Button>

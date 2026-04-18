@@ -41,6 +41,14 @@ export type LiabilitySubtype =
   | 'dated_credit'
   | 'informal_credit'
 
+export type PositionWithQuote = Position & {
+  price: number
+  value: number
+  currency: string
+  quoteName: string
+  changePercent: number | undefined
+}
+
 export interface Liability {
   id: string
   name: string

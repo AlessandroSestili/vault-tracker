@@ -9,7 +9,9 @@ interface ConfirmDialogProps {
   title: string
   description: string
   confirmLabel?: string
-  trigger: React.ReactElement
+  trigger?: React.ReactElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onConfirm: () => Promise<void> | void
 }
 
@@ -18,10 +20,16 @@ export function ConfirmDialog({
   description,
   confirmLabel = 'Elimina',
   trigger,
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
   onConfirm,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   async function handleConfirm() {
     setIsPending(true)
@@ -35,7 +43,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!isPending) setOpen(o) }}>
-      <DialogTrigger render={trigger} />
+      {!controlled && trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-xs bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">{title}</DialogTitle>
@@ -55,9 +63,7 @@ export function ConfirmDialog({
             onClick={handleConfirm}
             disabled={isPending}
           >
-            {isPending
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : confirmLabel}
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : confirmLabel}
           </Button>
         </div>
       </DialogContent>

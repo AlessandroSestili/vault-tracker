@@ -16,11 +16,11 @@ import { Plus, Loader2, Pencil } from 'lucide-react'
 import type { Liability, LiabilitySubtype } from '@/types'
 
 export const SUBTYPE_OPTIONS: { value: LiabilitySubtype; label: string }[] = [
-  { value: 'mortgage',       label: 'Mutuo / Prestito bancario' },
-  { value: 'installment',    label: 'Rata fissa (tasso 0)' },
-  { value: 'informal_debt',  label: 'Debito informale' },
-  { value: 'dated_credit',   label: 'Credito a scadenza' },
-  { value: 'informal_credit',label: 'Credito informale' },
+  { value: 'mortgage',        label: 'Mutuo / Prestito bancario' },
+  { value: 'installment',     label: 'Rata fissa (tasso 0)' },
+  { value: 'informal_debt',   label: 'Debito informale' },
+  { value: 'dated_credit',    label: 'Credito a scadenza' },
+  { value: 'informal_credit', label: 'Credito informale' },
 ]
 
 const schema = z.object({
@@ -66,9 +66,7 @@ function toActionData(data: FormInput) {
     amount: structured ? undefined : parseFloat(data.amount ?? '0'),
     currentBalance: structured ? parseFloat(data.current_balance ?? '0') : undefined,
     monthlyPayment: structured ? parseFloat(data.monthly_payment ?? '0') : undefined,
-    interestRate: data.subtype === 'mortgage' && data.interest_rate
-      ? parseFloat(data.interest_rate)
-      : undefined,
+    interestRate: data.subtype === 'mortgage' && data.interest_rate ? parseFloat(data.interest_rate) : undefined,
     nextPaymentDate: structured ? data.next_payment_date : undefined,
     dueDate: data.subtype === 'dated_credit' ? data.due_date : undefined,
   }
@@ -148,7 +146,6 @@ function LiabilityForm({
             <Input type="number" step="0.01" placeholder="es. 150000" {...register('current_balance')} />
             {errors.current_balance && <p className="text-xs text-destructive">{errors.current_balance.message}</p>}
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Rata mensile (€)</Label>
@@ -162,7 +159,6 @@ function LiabilityForm({
               </div>
             )}
           </div>
-
           <div className="space-y-1.5">
             <Label>Data prossima rata</Label>
             <Input type="date" {...register('next_payment_date')} />
@@ -186,10 +182,20 @@ function LiabilityForm({
   )
 }
 
-export function AddLiabilityDialog() {
-  const [open, setOpen] = useState(false)
+export function AddLiabilityDialog({
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+} = {}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   function onSubmit(data: FormInput) {
     startTransition(async () => {
@@ -201,11 +207,13 @@ export function AddLiabilityDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" title="Aggiungi debito/credito" />
-      }>
-        <Plus className="w-4 h-4" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" title="Aggiungi debito/credito" />
+        }>
+          <Plus className="w-4 h-4" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Aggiungi debito o credito</DialogTitle>
@@ -216,10 +224,22 @@ export function AddLiabilityDialog() {
   )
 }
 
-export function EditLiabilityDialog({ liability }: { liability: Liability }) {
-  const [open, setOpen] = useState(false)
+export function EditLiabilityDialog({
+  liability,
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  liability: Liability
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(liability.image_url)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   function onSubmit(data: FormInput) {
     startTransition(async () => {
@@ -230,11 +250,13 @@ export function EditLiabilityDialog({ liability }: { liability: Liability }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
-      }>
-        <Pencil className="w-3.5 h-3.5" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
+        }>
+          <Pencil className="w-3.5 h-3.5" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Modifica {liability.type === 'debt' ? 'debito' : 'credito'}</DialogTitle>

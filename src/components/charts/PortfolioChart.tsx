@@ -56,7 +56,7 @@ export function PortfolioChart({ data }: { data: DataPoint[] }) {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`px-3 py-2 md:py-1 rounded-full text-xs font-medium transition-colors ${
               period === p
                 ? 'bg-white/10 text-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-white/5'

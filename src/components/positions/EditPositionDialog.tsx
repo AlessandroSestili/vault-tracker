@@ -31,10 +31,22 @@ type LiveData = z.output<typeof liveSchema>
 type ManualInput = z.input<typeof manualSchema>
 type ManualData = z.output<typeof manualSchema>
 
-export function EditPositionDialog({ position }: { position: Position }) {
-  const [open, setOpen] = useState(false)
+export function EditPositionDialog({
+  position,
+  open: propOpen,
+  onOpenChange: propOnOpenChange,
+}: {
+  position: Position
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [imageUrl, setImageUrl] = useState<string | null>(position.image_url)
+
+  const controlled = propOpen !== undefined
+  const open = controlled ? propOpen : selfOpen
+  const setOpen = (v: boolean) => controlled ? propOnOpenChange?.(v) : setSelfOpen(v)
 
   const liveForm = useForm<LiveInput, unknown, LiveData>({
     resolver: zodResolver(liveSchema),
@@ -71,11 +83,13 @@ export function EditPositionDialog({ position }: { position: Position }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
-      }>
-        <Pencil className="w-3.5 h-3.5" />
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger render={
+          <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" />
+        }>
+          <Pencil className="w-3.5 h-3.5" />
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Modifica posizione</DialogTitle>
