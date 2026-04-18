@@ -9,6 +9,12 @@ function revalidateAll() {
   revalidatePath('/analytics')
 }
 
+async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non autenticato')
+  return user.id
+}
+
 // ── Accounts ─────────────────────────────────────────────────────────────────
 
 export async function createAccount(data: {
@@ -19,9 +25,10 @@ export async function createAccount(data: {
   imageUrl?: string | null
 }) {
   const supabase = await createClient()
+  const userId = await getUserId(supabase)
   const { data: account, error } = await supabase
     .from('accounts')
-    .insert({ name: data.name, type: data.type, currency: data.currency, image_url: data.imageUrl ?? null })
+    .insert({ name: data.name, type: data.type, currency: data.currency, image_url: data.imageUrl ?? null, user_id: userId })
     .select()
     .single()
   if (error) throw new Error(error.message)
@@ -81,6 +88,7 @@ export async function createPosition(data: {
   imageUrl?: string | null
 }) {
   const supabase = await createClient()
+  const userId = await getUserId(supabase)
   const { error } = await supabase.from('positions').insert({
     isin: data.isin,
     units: data.units,
@@ -88,6 +96,7 @@ export async function createPosition(data: {
     display_name: data.displayName || null,
     is_manual: false,
     image_url: data.imageUrl ?? null,
+    user_id: userId,
   })
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -128,6 +137,7 @@ export async function createManualPosition(data: {
   imageUrl?: string | null
 }) {
   const supabase = await createClient()
+  const userId = await getUserId(supabase)
   const { data: pos, error } = await supabase
     .from('positions')
     .insert({
@@ -138,6 +148,7 @@ export async function createManualPosition(data: {
       is_manual: true,
       current_value_eur: data.initialValueEur,
       image_url: data.imageUrl ?? null,
+      user_id: userId,
     })
     .select()
     .single()
@@ -198,6 +209,7 @@ export async function createLiability(data: {
 }) {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
+  const userId = await getUserId(supabase)
   const { error } = await supabase.from('liabilities').insert({
     name: data.name,
     type,
@@ -212,6 +224,7 @@ export async function createLiability(data: {
     interest_rate: data.interestRate ?? null,
     next_payment_date: data.nextPaymentDate ?? null,
     due_date: data.dueDate ?? null,
+    user_id: userId,
   })
   if (error) throw new Error(error.message)
   revalidateAll()

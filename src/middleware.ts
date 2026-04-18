@@ -1,23 +1,40 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({ request })
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth')) {
-    return NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { pathname } = request.nextUrl
+
+  if (user && pathname.startsWith('/login')) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  const expected = process.env.BASIC_AUTH_PASSWORD
-  if (!expected) return NextResponse.next()
+  if (!user && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
-  const cookie = req.cookies.get('vault_auth')
-  if (cookie?.value === expected) return NextResponse.next()
-
-  const url = req.nextUrl.clone()
-  url.pathname = '/login'
-  return NextResponse.redirect(url)
+  return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|manifest).*)'],
 }

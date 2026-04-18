@@ -9,7 +9,8 @@ export function TopNav() {
   const router = useRouter()
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    const { createClient } = await import('@/lib/supabase/client')
+    await createClient().auth.signOut()
     router.push('/login')
     router.refresh()
   }
