@@ -124,8 +124,28 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .h-nav {
+    height: calc(3.5rem + env(safe-area-inset-top));
+  }
+  .pt-nav {
+    padding-top: calc(3.5rem + env(safe-area-inset-top));
+  }
+  .pb-bottom-nav {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 }

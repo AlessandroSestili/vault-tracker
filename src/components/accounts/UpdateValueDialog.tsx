@@ -44,7 +44,7 @@ export function UpdateValueDialog({ account }: { account: AccountWithLatestSnaps
       <DialogTrigger render={<Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-white/5" title="Aggiorna valore" />}>
         <RefreshCcw className="w-3.5 h-3.5" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Aggiorna — {account.name}</DialogTitle>
         </DialogHeader>

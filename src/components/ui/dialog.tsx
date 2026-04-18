@@ -53,11 +53,21 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Base structure
+          "fixed z-50 grid gap-4 bg-popover p-5 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none",
+          // Mobile: bottom sheet (slide up dal basso)
+          "inset-x-0 bottom-0 w-full rounded-t-2xl max-h-[90vh] overflow-y-auto",
+          "data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-6 duration-200",
+          "data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-6",
+          // Desktop: modal centrata
+          "md:inset-auto md:left-1/2 md:top-1/2 md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
+          "md:w-full md:max-w-sm md:rounded-xl md:max-h-none md:overflow-visible",
           className
         )}
         {...props}
       >
+        {/* Drag handle — visible on mobile only */}
+        <div className="w-10 h-1 rounded-full bg-border mx-auto -mt-1 mb-2 md:hidden" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

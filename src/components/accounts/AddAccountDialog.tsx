@@ -50,7 +50,7 @@ export function AddAccountDialog() {
       }>
         <Plus className="w-4 h-4" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Nuovo account</DialogTitle>
         </DialogHeader>

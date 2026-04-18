@@ -52,7 +52,7 @@ export function EditAccountDialog({ account }: { account: AccountWithLatestSnaps
       }>
         <Pencil className="w-3.5 h-3.5" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Modifica account</DialogTitle>
         </DialogHeader>

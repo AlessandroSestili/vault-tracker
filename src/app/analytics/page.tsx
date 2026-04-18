@@ -77,19 +77,22 @@ export default async function AnalyticsPage() {
     }))
 
   return (
-    <div className="max-w-[1400px] mx-auto px-8 py-10">
-      <div className="grid grid-cols-[1fr_360px] gap-10 items-start">
-        <div className="space-y-8">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Analytics</p>
-            <p className="text-3xl font-semibold tracking-tight text-foreground">Allocazione patrimonio</p>
+    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-bottom-nav md:pb-10">
+      <div className="flex flex-col md:grid md:grid-cols-[1fr_360px] gap-6 md:gap-10 items-start">
+
+        {/* Left: chart */}
+        <div className="space-y-4 md:space-y-8">
+          <div className="space-y-1 px-1 md:px-0">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest">Analytics</p>
+            <p className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Allocazione patrimonio</p>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-8">
+          <div className="rounded-2xl bg-card border border-border p-4 md:p-8">
             <AllocationChart slices={slices} />
           </div>
         </div>
 
-        <div className="space-y-3 sticky top-20">
+        {/* Right: asset list */}
+        <div className="space-y-3 md:sticky md:top-20">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs text-muted-foreground uppercase tracking-widest">Asset</span>
             <div className="flex items-center gap-1">
@@ -99,7 +102,7 @@ export default async function AnalyticsPage() {
               <AddAccountDialog />
             </div>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-3">
+          <div className="rounded-2xl bg-card border border-border p-2 md:p-3">
             <AccountsList
               accounts={accounts}
               positionsWithQuotes={positionsWithQuotes}
@@ -108,6 +111,7 @@ export default async function AnalyticsPage() {
             />
           </div>
         </div>
+
       </div>
     </div>
   )

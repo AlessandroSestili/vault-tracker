@@ -206,7 +206,7 @@ export function AddLiabilityDialog() {
       }>
         <Plus className="w-4 h-4" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Aggiungi debito o credito</DialogTitle>
         </DialogHeader>
@@ -235,7 +235,7 @@ export function EditLiabilityDialog({ liability }: { liability: Liability }) {
       }>
         <Pencil className="w-3.5 h-3.5" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle>Modifica {liability.type === 'debt' ? 'debito' : 'credito'}</DialogTitle>
         </DialogHeader>
