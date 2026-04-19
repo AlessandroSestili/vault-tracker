@@ -85,6 +85,9 @@ export function AccountsList({
 }) {
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<ActiveModal>(null)
+  const [debtView, setDebtView] = useState<'totale' | 'rata'>('totale')
+
+  const hasDebtWithPayment = liabilities.some(l => l.type === 'debt' && l.monthly_payment)
 
   function openSheet(item: SheetItem) {
     if (window.innerWidth >= 768) return
@@ -130,6 +133,25 @@ export function AccountsList({
 
   return (
     <>
+      {hasDebtWithPayment && (
+        <div className="flex justify-end px-1 pb-2">
+          <div className="flex items-center gap-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
+            {(['totale', 'rata'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setDebtView(mode)}
+                className={`px-2.5 py-1 rounded-md font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                  debtView === mode
+                    ? 'bg-white/[0.08] text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div>
         {items.map((item) => {
 
@@ -228,6 +250,9 @@ export function AccountsList({
           const l = item.data
           const isDebt = l.type === 'debt'
           const balance = liabilityBalance(l)
+          const showRata = isDebt && debtView === 'rata' && !!l.monthly_payment
+          const displayValue = showRata ? l.monthly_payment! : balance
+          const displayLabel = showRata ? 'rata mensile' : isDebt ? 'debito' : 'credito'
           return (
             <div key={`lib-${l.id}`} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
               <LogoAvatar
@@ -240,7 +265,6 @@ export function AccountsList({
                 <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
                   {SUBTYPE_LABEL[l.subtype]}
                   {l.counterparty && ` · ${l.counterparty}`}
-                  {l.monthly_payment && ` · €${l.monthly_payment}/mese`}
                   {l.due_date && ` · scade ${formatDate(l.due_date)}`}
                 </p>
               </div>
@@ -250,9 +274,9 @@ export function AccountsList({
               </div>
               <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                 <p className={`font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] ${isDebt ? 'text-[#ef4444]' : 'text-[var(--primary)]'}`}>
-                  {isDebt ? '−' : '+'}{formatCurrency(balance, l.currency)}
+                  {isDebt ? '−' : '+'}{formatCurrency(displayValue, l.currency)}
                 </p>
-                <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">{isDebt ? 'debito' : 'credito'}</p>
+                <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">{displayLabel}</p>
               </div>
             </div>
           )
