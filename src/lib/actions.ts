@@ -271,3 +271,69 @@ export async function deleteLiability(id: string) {
   if (error) throw new Error(error.message)
   revalidateAll()
 }
+
+// ── Recurring Incomes ─────────────────────────────────────────────────────────
+
+export async function createRecurringIncome(data: {
+  accountId: string
+  name: string
+  amount: number
+  currency: string
+  dayOfMonth: number
+}) {
+  const supabase = await createClient()
+  const userId = await getUserId(supabase)
+  const { error } = await supabase.from('recurring_incomes').insert({
+    user_id: userId,
+    account_id: data.accountId,
+    name: data.name,
+    amount: data.amount,
+    currency: data.currency,
+    day_of_month: data.dayOfMonth,
+  })
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function updateRecurringIncome(id: string, data: {
+  accountId: string
+  name: string
+  amount: number
+  currency: string
+  dayOfMonth: number
+}) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('recurring_incomes').update({
+    account_id: data.accountId,
+    name: data.name,
+    amount: data.amount,
+    currency: data.currency,
+    day_of_month: data.dayOfMonth,
+  }).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function deleteRecurringIncome(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('recurring_incomes').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function confirmRecurringIncome(incomeId: string, accountId: string, amount: number, currency: string) {
+  const supabase = await createClient()
+  const { data: latest } = await supabase
+    .from('accounts_with_latest')
+    .select('latest_value')
+    .eq('id', accountId)
+    .single()
+  const currentValue = latest?.latest_value ?? 0
+  const { error } = await supabase.from('snapshots').insert({
+    account_id: accountId,
+    value: currentValue + amount,
+    recorded_at: new Date().toISOString().slice(0, 10),
+  })
+  if (error) throw new Error(error.message)
+  revalidateAll()
+}

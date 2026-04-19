@@ -4,7 +4,9 @@ import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
-import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote } from '@/types'
+import { MonthlyProspect, TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
+import { AddRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
+import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
 import { formatCurrency } from '@/lib/formats'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
 import { liabilityBalance } from '@/lib/liability-calc'
@@ -27,6 +29,12 @@ async function getLiabilities(): Promise<Liability[]> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('liabilities').select('*').order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+async function getRecurringIncomes(): Promise<RecurringIncome[]> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('recurring_incomes').select('*').order('day_of_month', { ascending: true })
   return data ?? []
 }
 
@@ -77,8 +85,8 @@ function computeDailyTotals(
 }
 
 export default async function HomePage() {
-  const [accounts, allPositions, liabilities, accountSnapshots, positionSnapshots, eurUsdRate] = await Promise.all([
-    getAccounts(), getPositions(), getLiabilities(),
+  const [accounts, allPositions, liabilities, recurringIncomes, accountSnapshots, positionSnapshots, eurUsdRate] = await Promise.all([
+    getAccounts(), getPositions(), getLiabilities(), getRecurringIncomes(),
     getAccountSnapshots(), getPositionSnapshots(), fetchEurUsdRate(),
   ])
 
@@ -158,9 +166,19 @@ export default async function HomePage() {
               </div>
             </div>
 
+            {/* Today income banner */}
+            <TodayIncomeBanner incomes={recurringIncomes} accounts={accounts} />
+
             {/* Chart */}
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
               <PortfolioChart data={chartData} />
+            </div>
+
+            {/* Monthly prospect */}
+            <MonthlyProspect incomes={recurringIncomes} liabilities={liabilities} accounts={accounts} />
+
+            <div className="flex justify-end">
+              <AddRecurringIncomeDialog accounts={accounts} />
             </div>
           </div>
 

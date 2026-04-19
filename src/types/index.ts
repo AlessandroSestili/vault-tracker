@@ -49,6 +49,17 @@ export type PositionWithQuote = Position & {
   changePercent: number | undefined
 }
 
+export interface RecurringIncome {
+  id: string
+  user_id: string
+  account_id: string
+  name: string
+  amount: number
+  currency: string
+  day_of_month: number
+  created_at: string
+}
+
 export interface Liability {
   id: string
   name: string
