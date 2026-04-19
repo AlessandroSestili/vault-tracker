@@ -37,19 +37,16 @@ function SheetOption({ label, sub, onClick }: { label: string; sub: string; onCl
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+      className="w-full flex items-center gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-muted/30 active:bg-muted/50"
     >
-      <div
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 border border-white/[0.06]"
-        style={{ background: 'rgba(255,255,255,0.04)' }}
-      >
-        <Plus className="w-4 h-4 text-[#a1a1aa]" strokeWidth={1.5} />
+      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 border border-border bg-muted/40">
+        <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[14.5px] font-medium text-[#fafafa] tracking-[-0.1px]">{label}</p>
-        <p className="text-[12px] text-[#71717a] mt-0.5">{sub}</p>
+        <p className="text-[14.5px] font-medium text-foreground tracking-[-0.1px]">{label}</p>
+        <p className="text-[12px] text-muted-foreground mt-0.5">{sub}</p>
       </div>
-      <ChevronRight className="w-3.5 h-3.5 text-[#52525b] shrink-0" strokeWidth={1.5} />
+      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
     </button>
   )
 }
@@ -94,12 +91,12 @@ export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' | 
       )}
 
       <Dialog open={sheet} onOpenChange={setSheet}>
-        <DialogContent showCloseButton={false} className="p-0 bg-[#0f0f11] border-white/[0.1]">
+        <DialogContent showCloseButton={false} className="p-0 bg-popover border-border">
           <DialogTitle className="sr-only">Aggiungi elemento</DialogTitle>
           {/* Sheet header */}
           <div className="px-6 pt-2 pb-3.5">
-            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-1">Nuovo</p>
-            <p className="text-[20px] font-medium text-[#fafafa] tracking-[-0.4px]">Aggiungi al patrimonio</p>
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-1">Nuovo</p>
+            <p className="text-[20px] font-medium text-foreground tracking-[-0.4px]">Aggiungi al patrimonio</p>
           </div>
           <div className="pb-3">
             {OPTIONS.map(({ kind, label, sub }) => (

@@ -127,31 +127,31 @@ export default async function HomePage() {
 
             {/* Hero */}
             <div className="pt-2 md:pt-8 pb-5 md:px-0">
-              <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-[18px] flex items-center justify-between">
+              <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-[18px] flex items-center justify-between">
                 <span>Portafoglio netto</span>
               </p>
 
               {/* Total */}
               <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                <span className="text-[44px] md:text-[56px] font-medium tracking-[-1.8px] md:tracking-[-2px] tabular-nums text-[#fafafa] leading-none">
+                <span className="text-[44px] md:text-[56px] font-medium tracking-[-1.8px] md:tracking-[-2px] tabular-nums text-foreground leading-none">
                   {totalNumber}
                 </span>
-                <span className="text-[20px] md:text-[24px] font-normal text-[#a1a1aa] leading-none">€</span>
+                <span className="text-[20px] md:text-[24px] font-normal text-muted-foreground leading-none">€</span>
               </div>
 
               {/* Stats row */}
               <div className="flex items-center gap-5 mt-[18px] font-mono text-[10.5px] tracking-[0.4px] flex-wrap">
                 {positionsWithQuotes.length > 0 && (
-                  <span className="text-[#71717a]">
+                  <span className="text-muted-foreground">
                     <span className="text-[var(--primary)] mr-1">●</span>
                     {positionsWithQuotes.length} live
                   </span>
                 )}
-                <span className="text-[#71717a]">
-                  EUR/USD <span className="text-[#a1a1aa] tabular-nums">{eurUsdRate.toFixed(4)}</span>
+                <span className="text-muted-foreground">
+                  EUR/USD <span className="text-foreground/60 tabular-nums">{eurUsdRate.toFixed(4)}</span>
                 </span>
                 {debtsTotal > 0 && (
-                  <span className="text-[#ef4444] tabular-nums">
+                  <span className="text-destructive tabular-nums">
                     Debiti {formatCurrency(debtsTotal)}
                   </span>
                 )}
@@ -167,8 +167,8 @@ export default async function HomePage() {
           {/* Right: asset list */}
           <div className="w-full space-y-3 md:sticky md:top-20">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
-                Asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>
+              <span className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">
+                Asset <span className="ml-1.5">{allItems.length}</span>
               </span>
               <div className="flex items-center gap-1.5">
                 <RefreshButton />
@@ -186,7 +186,7 @@ export default async function HomePage() {
               />
             </div>
             {/* Timestamp — mobile only */}
-            <p className="md:hidden text-center font-mono text-[10px] tracking-[0.4px] text-[#52525b] pt-2 pb-1">
+            <p className="md:hidden text-center font-mono text-[10px] tracking-[0.4px] text-muted-foreground pt-2 pb-1">
               ULTIMO AGGIORNAMENTO · {new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} · {new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
