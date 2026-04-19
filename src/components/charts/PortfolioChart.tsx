@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
+import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 
 type DataPoint = { day: string; total: number }
 type Period = '1S' | '1M' | '3M' | '1A' | 'Tutto'
@@ -80,7 +81,15 @@ export function PortfolioChart({ data }: { data: DataPoint[] }) {
       )}
 
       {/* Chart */}
-      {!hasData ? (
+      {data.length === 0 ? (
+        <div className="h-[160px] md:h-[220px] flex flex-col items-center justify-center gap-4">
+          <div className="text-center">
+            <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessun asset ancora</p>
+            <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi un conto, posizione o debito per iniziare</p>
+          </div>
+          <AddItemSheet variant="lime-cta" />
+        </div>
+      ) : !hasData ? (
         <div className="h-[100px] md:h-[200px] flex items-center justify-center text-[#71717a] text-sm font-mono">
           Nessun dato per questo periodo
         </div>

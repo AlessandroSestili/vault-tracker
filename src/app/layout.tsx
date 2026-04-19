@@ -41,9 +41,14 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background">
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('vault-theme');if(!t||t==='dark')return;var r=document.documentElement;r.classList.remove('dark');r.classList.add(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t);})()` }}
+        />
         <TopNav />
         <main
           className="flex-1"

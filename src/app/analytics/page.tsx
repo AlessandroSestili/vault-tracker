@@ -63,6 +63,8 @@ export default async function AnalyticsPage() {
     if (a.latest_value) grouped[a.type] = (grouped[a.type] ?? 0) + a.latest_value
   }
 
+  const sliceTotal = Object.values(grouped).filter(v => v > 0).reduce((s, v) => s + v, 0)
+
   const slices: Slice[] = (Object.entries(grouped) as [AccountType, number][])
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1])
@@ -70,8 +72,8 @@ export default async function AnalyticsPage() {
       type,
       label: ACCOUNT_TYPE_CONFIG[type]?.label ?? type,
       value,
-      color: TYPE_COLORS[type] ?? 'oklch(0.55 0.05 240)',
-      pct: total > 0 ? (value / total) * 100 : 0,
+      color: TYPE_COLORS[type] ?? '#a1a1aa',
+      pct: sliceTotal > 0 ? (value / sliceTotal) * 100 : 0,
     }))
 
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]

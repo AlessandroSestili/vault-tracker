@@ -53,10 +53,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="min-h-screen bg-[#09090b] flex flex-col items-center px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
       {/* Logo block */}
-      <div className="flex flex-col items-center mt-[calc(60px+env(safe-area-inset-top))] mb-auto">
+      <div className="w-full max-w-[440px] flex flex-col items-center mt-[calc(60px+env(safe-area-inset-top))] mb-auto">
         <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center mb-7">
           <span className="font-mono text-[22px] font-bold text-[#09090b]">V</span>
         </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
       </div>
 
       {/* Auth block */}
-      <div className="pb-10 space-y-4" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="w-full max-w-[440px] pb-10 space-y-4" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
 
         {/* Google */}
         <button

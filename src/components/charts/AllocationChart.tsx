@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
+import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 
 type Slice = {
   type: AccountType
@@ -13,18 +14,22 @@ type Slice = {
 }
 
 const TYPE_COLORS: Record<AccountType, string> = {
-  investment: 'oklch(0.82 0.18 130)',  // lime
-  cash:       'oklch(0.78 0.14 220)',  // sky
-  pension:    'oklch(0.72 0.18 300)',  // violet
-  crypto:     'oklch(0.75 0.16 50)',   // amber
-  other:      'oklch(0.72 0.02 260)',  // gray
+  investment: '#bef264',
+  cash:       '#38bdf8',
+  pension:    '#a78bfa',
+  crypto:     '#fb923c',
+  other:      '#a1a1aa',
 }
 
 export function AllocationChart({ slices }: { slices: Slice[] }) {
   if (slices.length === 0) {
     return (
-      <div className="flex items-center justify-center h-72 text-muted-foreground text-sm">
-        Nessun dato disponibile
+      <div className="flex flex-col items-center justify-center gap-4 h-72">
+        <div className="text-center">
+          <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessuna allocazione</p>
+          <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi asset per visualizzare la distribuzione</p>
+        </div>
+        <AddItemSheet variant="lime-cta" />
       </div>
     )
   }
@@ -35,17 +40,13 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
   return (
     <div className="flex flex-col md:flex-row md:items-start md:gap-10">
       {/* Donut — 200px mobile, 280px desktop */}
-      <div className="relative shrink-0 mx-auto md:mx-0"
-           style={{ width: 200, height: 200 }}
-      >
+      <div className="relative shrink-0 mx-auto md:mx-0 w-[200px] h-[200px] md:w-[280px] md:h-[280px]">
         <div className="md:hidden absolute inset-0">
           <DonutSvg slices={slices} size={200} thickness={14} total={total} />
         </div>
-        <div className="hidden md:block absolute inset-0" style={{ width: 280, height: 280 }}>
+        <div className="hidden md:block absolute inset-0">
           <DonutSvg slices={slices} size={280} thickness={18} total={total} />
         </div>
-        {/* spacer per desktop */}
-        <div className="hidden md:block" style={{ width: 280, height: 280 }} />
       </div>
 
       {/* Legend con barre proporzionali */}

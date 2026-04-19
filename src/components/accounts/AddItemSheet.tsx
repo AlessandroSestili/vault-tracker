@@ -54,7 +54,7 @@ function SheetOption({ label, sub, onClick }: { label: string; sub: string; onCl
   )
 }
 
-export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' }) {
+export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' | 'lime-cta' }) {
   const [sheet, setSheet] = useState(false)
   const [adding, setAdding] = useState<AddKind>(null)
 
@@ -73,6 +73,15 @@ export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' })
         >
           <Plus className="w-[15px] h-[15px]" strokeWidth={2} />
           Aggiungi
+        </button>
+      ) : variant === 'lime-cta' ? (
+        <button
+          onClick={() => setSheet(true)}
+          className="flex items-center gap-2 rounded-full px-5 py-3 text-[13px] font-medium tracking-[-0.1px] transition-opacity hover:opacity-90"
+          style={{ background: '#bef264', color: '#09090b' }}
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+          Aggiungi il primo asset
         </button>
       ) : (
         <button

@@ -91,6 +91,41 @@
   --sidebar-ring: oklch(0.82 0.18 130);
 }
 
+.light {
+  --background: #f4f4f5;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #65a30d;
+  --primary-foreground: #ffffff;
+  --secondary: #e4e4e7;
+  --secondary-foreground: #3f3f46;
+  --muted: #e4e4e7;
+  --muted-foreground: #71717a;
+  --accent: #65a30d;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: rgba(0,0,0,0.08);
+  --input: rgba(0,0,0,0.06);
+  --ring: #65a30d;
+  --chart-1: #65a30d;
+  --chart-2: #0284c7;
+  --chart-3: #7c3aed;
+  --chart-4: #d97706;
+  --chart-5: #71717a;
+  --radius: 0.75rem;
+  --sidebar: #e4e4e7;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #65a30d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d4d4d8;
+  --sidebar-accent-foreground: #3f3f46;
+  --sidebar-border: rgba(0,0,0,0.06);
+  --sidebar-ring: #65a30d;
+}
+
 .dark {
   --background: #09090b;
   --foreground: #fafafa;
@@ -141,6 +176,9 @@
   }
   html {
     @apply font-sans;
+  }
+  button, a, [role="button"] {
+    cursor: pointer;
   }
 }
 

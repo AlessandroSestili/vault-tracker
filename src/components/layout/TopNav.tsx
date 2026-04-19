@@ -1,19 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Search, User, LogOut } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Search } from 'lucide-react'
+import { ProfileSheet } from './ProfileSheet'
 
 export function TopNav() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleLogout() {
-    const { createClient } = await import('@/lib/supabase/client')
-    await createClient().auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   if (pathname === '/login') return null
 
@@ -55,13 +48,7 @@ export function TopNav() {
             >
               <Search className="w-[15px] h-[15px]" strokeWidth={1.5} />
             </button>
-            <button
-              onClick={handleLogout}
-              className="w-[34px] h-[34px] rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717a]"
-              aria-label="Profilo / Esci"
-            >
-              <User className="w-[15px] h-[15px]" strokeWidth={1.5} />
-            </button>
+            <ProfileSheet variant="mobile" />
           </div>
         </div>
 
@@ -79,13 +66,7 @@ export function TopNav() {
           {navLink('/analytics', 'Analytics')}
         </div>
         <div className="hidden md:flex flex-1 justify-end">
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-            title="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <ProfileSheet variant="desktop" />
         </div>
 
       </div>
