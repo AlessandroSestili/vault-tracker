@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search } from 'lucide-react'
+
 import { ProfileSheet } from './ProfileSheet'
 
 export function TopNav() {
@@ -42,12 +42,6 @@ export function TopNav() {
             <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              className="w-[34px] h-[34px] rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717a]"
-              aria-label="Cerca"
-            >
-              <Search className="w-[15px] h-[15px]" strokeWidth={1.5} />
-            </button>
             <ProfileSheet variant="mobile" />
           </div>
         </div>
