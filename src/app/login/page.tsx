@@ -39,7 +39,11 @@ export default function LoginPage() {
       router.push('/')
       router.refresh()
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+      })
       if (error) { setError(error.message); setLoading(false); return }
       setInfo('Controlla la tua email per confermare la registrazione.')
       setLoading(false)
