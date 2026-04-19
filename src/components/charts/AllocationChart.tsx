@@ -1,6 +1,6 @@
 'use client'
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
@@ -43,11 +43,28 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
     <div className="flex flex-col md:flex-row md:items-start md:gap-10">
       {/* Donut — 200px mobile, 280px desktop */}
       <div className="relative shrink-0 mx-auto md:mx-0 w-[200px] h-[200px] md:w-[280px] md:h-[280px]">
-        <div className="md:hidden absolute inset-0">
-          <DonutSvg slices={slices} size={200} thickness={14} total={total} />
+        {/* Mobile */}
+        <div className="md:hidden">
+          <PieChart width={200} height={200}>
+            <Pie data={slices} cx={100} cy={100} innerRadius={72} outerRadius={93}
+              dataKey="value" startAngle={90} endAngle={-270} stroke="none">
+              {slices.map((s, i) => <Cell key={i} fill={s.color} />)}
+            </Pie>
+          </PieChart>
         </div>
-        <div className="hidden md:block absolute inset-0">
-          <DonutSvg slices={slices} size={280} thickness={18} total={total} />
+        {/* Desktop */}
+        <div className="hidden md:block">
+          <PieChart width={280} height={280}>
+            <Pie data={slices} cx={140} cy={140} innerRadius={103} outerRadius={131}
+              dataKey="value" startAngle={90} endAngle={-270} stroke="none">
+              {slices.map((s, i) => <Cell key={i} fill={s.color} />)}
+            </Pie>
+          </PieChart>
+        </div>
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
+          <p className="text-[18px] md:text-[20px] font-medium text-foreground tabular-nums">{formatCurrency(total)}</p>
         </div>
       </div>
 
@@ -90,54 +107,6 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
   )
 }
 
-function DonutSvg({ slices, size, thickness, total }: {
-  slices: Slice[]
-  size: number
-  thickness: number
-  total: number
-}) {
-  const r = size / 2 - thickness / 2
-  const cx = size / 2
-  const cy = size / 2
-  const C = 2 * Math.PI * r
-  let offset = 0
-
-  return (
-    <svg width={size} height={size} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={thickness} />
-      {slices.map((s, i) => {
-        const len = (s.pct / 100) * C
-        const gap = 2
-        const dash = `${Math.max(0, len - gap)} ${C - len + gap}`
-        const el = (
-          <circle
-            key={i}
-            cx={cx} cy={cy} r={r}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={thickness}
-            strokeDasharray={dash}
-            strokeDashoffset={-offset}
-            strokeLinecap="butt"
-          />
-        )
-        offset += len
-        return el
-      })}
-      {/* Center label — counter-rotate */}
-      <g transform={`rotate(90 ${cx} ${cy})`}>
-        <text x={cx} y={cy - (size > 220 ? 8 : 6)} textAnchor="middle"
-          style={{ fill: '#71717a', fontSize: size > 220 ? 11 : 10, letterSpacing: 1.5, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-          TOTALE
-        </text>
-        <text x={cx} y={cy + (size > 220 ? 16 : 14)} textAnchor="middle"
-          style={{ fill: '#fafafa', fontSize: size > 220 ? 20 : 18, fontWeight: 500, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
-          {formatCurrency(total)}
-        </text>
-      </g>
-    </svg>
-  )
-}
 
 export { TYPE_COLORS }
 export type { Slice }
