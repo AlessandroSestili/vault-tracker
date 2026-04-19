@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { Pencil, Trash2, Info } from 'lucide-react'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EditAccountDialog } from './EditAccountDialog'
@@ -56,6 +57,18 @@ type ActiveModal =
   | { kind: 'delete-manual';  data: Position }
   | { kind: 'delete-liability'; data: Liability }
   | null
+
+function DeskLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+    >
+      {children}
+    </Link>
+  )
+}
 
 function DeskBtn({ onClick, children, danger }: { onClick: () => void; children: React.ReactNode; danger?: boolean }) {
   return (
@@ -185,6 +198,7 @@ export function AccountsList({
                   </p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                  <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
                   <DeskBtn onClick={() => setModal({ kind: 'edit-live', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
@@ -212,6 +226,7 @@ export function AccountsList({
                   <p className="text-[12px] text-[#71717a] mt-0.5">{p.broker || 'Manuale'}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
                   <DeskBtn onClick={() => setModal({ kind: 'edit-manual', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-manual', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
@@ -234,6 +249,7 @@ export function AccountsList({
                   <p className="text-[12px] text-[#71717a] mt-0.5">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <DeskLink href={`/account/${a.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
                   <DeskBtn onClick={() => setModal({ kind: 'edit-account', data: a })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'update-value', data: a })}><span className="text-xs font-medium">€</span></DeskBtn>
                   <DeskBtn onClick={() => setModal({ kind: 'delete-account', data: a })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
@@ -269,6 +285,7 @@ export function AccountsList({
                 </p>
               </div>
               <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <DeskLink href={`/liability/${l.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
                 <DeskBtn onClick={() => setModal({ kind: 'edit-liability', data: l })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
                 <DeskBtn onClick={() => setModal({ kind: 'delete-liability', data: l })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
               </div>

@@ -1,6 +1,7 @@
 'use client'
 
-import { RefreshCcw, Pencil, Trash2, Settings2, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { RefreshCcw, Pencil, Trash2, Settings2, ChevronRight, BarChart2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote } from '@/types'
 
@@ -75,6 +76,11 @@ export function ItemActionSheet({ item, open, onOpenChange, onAction }: Props) {
   const actions = getActions(item)
   const title = getTitle(item)
 
+  const detailHref =
+    item.kind === 'account' ? `/account/${item.data.id}` :
+    item.kind === 'live-position' || item.kind === 'manual-position' ? `/position/${item.data.id}` :
+    `/liability/${item.data.id}`
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="p-0 bg-[#0f0f11] border-white/[0.1]">
@@ -85,6 +91,21 @@ export function ItemActionSheet({ item, open, onOpenChange, onAction }: Props) {
           <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{title}</p>
         </div>
         <div className="pb-3">
+          {/* Detail link */}
+          <Link
+            href={detailHref}
+            onClick={() => onOpenChange(false)}
+            className="w-full flex items-center gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+          >
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <BarChart2 className="w-4 h-4 text-[#fafafa]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14.5px] font-medium tracking-[-0.1px] text-[#fafafa]">Vedi dettaglio</p>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-[#52525b] shrink-0" strokeWidth={1.5} />
+          </Link>
           {actions.map((row, i) => {
             const color = row.destructive ? '#ef4444' : '#fafafa'
             const iconBg = row.destructive ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'
