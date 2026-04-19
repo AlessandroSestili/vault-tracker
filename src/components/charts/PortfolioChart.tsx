@@ -87,7 +87,9 @@ export function PortfolioChart({ data }: { data: DataPoint[] }) {
             <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessun asset ancora</p>
             <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi un conto, posizione o debito per iniziare</p>
           </div>
-          <AddItemSheet variant="lime-cta" />
+          <div className="hidden md:flex">
+            <AddItemSheet variant="lime-cta" />
+          </div>
         </div>
       ) : !hasData ? (
         <div className="h-[100px] md:h-[200px] flex items-center justify-center text-[#71717a] text-sm font-mono">

@@ -29,7 +29,9 @@ export function AllocationChart({ slices }: { slices: Slice[] }) {
           <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessuna allocazione</p>
           <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi asset per visualizzare la distribuzione</p>
         </div>
-        <AddItemSheet variant="lime-cta" />
+        <div className="hidden md:flex">
+          <AddItemSheet variant="lime-cta" />
+        </div>
       </div>
     )
   }
