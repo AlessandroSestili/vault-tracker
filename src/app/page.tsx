@@ -172,7 +172,9 @@ export default async function HomePage() {
               </span>
               <div className="flex items-center gap-1.5">
                 <RefreshButton />
-                <AddItemSheet />
+                <div className="hidden md:block">
+                  <AddItemSheet />
+                </div>
               </div>
             </div>
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2">
