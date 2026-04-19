@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LogOut, Moon, Sun, Monitor, User } from 'lucide-react'
+import { LogOut, Moon, Sun, Monitor, User, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
@@ -124,8 +124,15 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
             </div>
           </div>
 
-          {/* Logout */}
-          <div className="px-4 pb-4 pt-1">
+          {/* Support + Logout */}
+          <div className="px-4 pb-4 pt-1 space-y-0.5">
+            <a
+              href="mailto:sestilialessandro@gmail.com?subject=Vault%20Tracker%20%E2%80%94%20Segnalazione"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[14px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            >
+              <Mail className="w-4 h-4" strokeWidth={1.5} />
+              Segnala un problema
+            </a>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[14px] text-muted-foreground hover:text-destructive hover:bg-muted/30 transition-colors"
