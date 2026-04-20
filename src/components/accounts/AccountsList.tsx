@@ -329,8 +329,11 @@ export function AccountsList({
           <GroupHeader
             label="Debiti & Crediti"
             count={liabilities.length + incomes.length}
-            total={`${prospectoNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(prospectoNet))}`}
-            totalColor={prospectoNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
+            total={(() => {
+              const net = showLiabilities ? prospectoNet : incomesTotal
+              return `${net >= 0 ? '+' : '−'}${formatCurrency(Math.abs(net))}`
+            })()}
+            totalColor={(showLiabilities ? prospectoNet : incomesTotal) >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
             open={openGroups.liabilities}
             onToggle={() => toggleGroup('liabilities')}
           />
