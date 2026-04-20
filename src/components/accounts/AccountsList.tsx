@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Pencil, Trash2, Info, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, Info, ChevronDown, CheckCircle2, Loader2 } from 'lucide-react'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EditAccountDialog } from './EditAccountDialog'
 import { UpdateValueDialog } from './UpdateValueDialog'
 import { EditPositionDialog } from '@/components/positions/EditPositionDialog'
 import { EditLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
+import { EditRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
 import { ItemActionSheet } from './ItemActionSheet'
 import type { SheetItem, SheetAction } from './ItemActionSheet'
-import { deleteAccount, deletePosition, deleteLiability } from '@/lib/actions'
-import type { AccountWithLatestSnapshot, Position, Liability, LiabilitySubtype, PositionWithQuote } from '@/types'
+import { deleteAccount, deletePosition, deleteLiability, confirmRecurringIncome, deleteRecurringIncome } from '@/lib/actions'
+import type { AccountWithLatestSnapshot, Position, Liability, LiabilitySubtype, PositionWithQuote, RecurringIncome } from '@/types'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
 import { formatCurrency, formatDate } from '@/lib/formats'
 import { liabilityBalance } from '@/lib/liability-calc'
@@ -121,21 +122,38 @@ function GroupHeader({
   )
 }
 
+const todayDay = new Date().getDate()
+const currentMonthName = new Date().toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+
 export function AccountsList({
   accounts,
   positionsWithQuotes,
   manualPositions,
   liabilities,
+  incomes = [],
 }: {
   accounts: AccountWithLatestSnapshot[]
   positionsWithQuotes: PositionWithQuote[]
   manualPositions: Position[]
   liabilities: Liability[]
+  incomes?: RecurringIncome[]
 }) {
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<ActiveModal>(null)
   const [debtView, setDebtView] = useState<'totale' | 'rata'>('totale')
   const [openGroups, setOpenGroups] = useState({ conti: true, posizioni: true, liabilities: true })
+  const [editingIncome, setEditingIncome] = useState<RecurringIncome | null>(null)
+  const [deletingIncome, setDeletingIncome] = useState<RecurringIncome | null>(null)
+  const [confirming, setConfirming] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function handleConfirmIncome(income: RecurringIncome) {
+    setConfirming(income.id)
+    startTransition(async () => {
+      await confirmRecurringIncome(income.id, income.account_id, income.amount, income.currency)
+      setConfirming(null)
+    })
+  }
 
   const hasDebtWithPayment = liabilities.some(l => l.type === 'debt' && l.monthly_payment)
 
@@ -171,9 +189,10 @@ export function AccountsList({
     + manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
   const debtsTotal = liabilities.filter(l => l.type === 'debt').reduce((s, l) => s + liabilityBalance(l), 0)
   const creditsTotal = liabilities.filter(l => l.type === 'credit').reduce((s, l) => s + liabilityBalance(l), 0)
-  const liabNet = creditsTotal - debtsTotal
+  const incomesTotal = incomes.reduce((s, i) => s + i.amount, 0)
+  const prospectoNet = incomesTotal + creditsTotal - debtsTotal
 
-  const isEmpty = accounts.length === 0 && positionsWithQuotes.length === 0 && manualPositions.length === 0 && liabilities.length === 0
+  const isEmpty = accounts.length === 0 && positionsWithQuotes.length === 0 && manualPositions.length === 0 && liabilities.length === 0 && incomes.length === 0
 
   if (isEmpty) {
     return (
@@ -302,14 +321,14 @@ export function AccountsList({
         </div>
       )}
 
-      {/* ── DEBITI & CREDITI ── */}
-      {liabilities.length > 0 && (
+      {/* ── PROSPETTO ── */}
+      {(liabilities.length > 0 || incomes.length > 0) && (
         <div>
           <GroupHeader
-            label="Debiti & Crediti"
-            count={liabilities.length}
-            total={`${liabNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(liabNet))}`}
-            totalColor={liabNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
+            label={`Prospetto · ${currentMonthName}`}
+            count={liabilities.length + incomes.length}
+            total={`${prospectoNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(prospectoNet))}`}
+            totalColor={prospectoNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
             open={openGroups.liabilities}
             onToggle={() => toggleGroup('liabilities')}
           >
@@ -334,6 +353,37 @@ export function AccountsList({
               </div>
             )}
           </GroupHeader>
+          {openGroups.liabilities && incomes.map((income) => {
+            const isToday = income.day_of_month === todayDay
+            const isFuture = income.day_of_month > todayDay
+            return (
+              <div key={`inc-${income.id}`} className={`${rowClass} ${isFuture ? 'opacity-50' : ''}`}>
+                <LogoAvatar name={income.name} catColor={CAT_DOT.credit} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{income.name}</span>
+                    {isToday && <span className="font-mono text-[9px] tracking-[1px] text-[var(--primary)]">OGGI</span>}
+                    {isFuture && <span className="font-mono text-[9px] tracking-[0.5px] text-muted-foreground">previsto</span>}
+                  </div>
+                  <p className="font-mono text-[12px] text-[#71717a] mt-0.5">giorno {income.day_of_month}</p>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-1">
+                  {isToday && (
+                    <DeskBtn onClick={() => handleConfirmIncome(income)}>
+                      {isPending && confirming === income.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <CheckCircle2 className="w-3.5 h-3.5 text-[var(--primary)]" strokeWidth={1.5} />}
+                    </DeskBtn>
+                  )}
+                  <DeskBtn onClick={() => setEditingIncome(income)}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
+                  <DeskBtn onClick={() => setDeletingIncome(income)} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+                </div>
+                <span className="font-mono text-[13.5px] font-medium tabular-nums text-[var(--primary)] shrink-0 ml-2">
+                  +{formatCurrency(income.amount, income.currency)}
+                </span>
+              </div>
+            )
+          })}
           {openGroups.liabilities && sortedLiabilities.map((l) => {
             const isDebt = l.type === 'debt'
             const balance = liabilityBalance(l)
@@ -430,6 +480,18 @@ export function AccountsList({
           open
           onOpenChange={(o) => !o && closeModal()}
           onConfirm={() => deleteLiability(modal.data.id)}
+        />
+      )}
+      {editingIncome && (
+        <EditRecurringIncomeDialog income={editingIncome} accounts={accounts} open onOpenChange={(o) => !o && setEditingIncome(null)} />
+      )}
+      {deletingIncome && (
+        <ConfirmDialog
+          title="Elimina entrata ricorrente"
+          description={`Vuoi eliminare "${deletingIncome.name}"?`}
+          open
+          onOpenChange={(o) => !o && setDeletingIncome(null)}
+          onConfirm={() => deleteRecurringIncome(deletingIncome.id)}
         />
       )}
     </>

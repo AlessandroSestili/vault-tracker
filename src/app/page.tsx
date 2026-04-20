@@ -4,7 +4,7 @@ import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
-import { MonthlyProspect, TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
+import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
 import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
 import { formatCurrency } from '@/lib/formats'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
@@ -173,9 +173,6 @@ export default async function HomePage() {
               <PortfolioChart data={chartData} />
             </div>
 
-            {/* Monthly prospect */}
-            <MonthlyProspect incomes={recurringIncomes} liabilities={liabilities} accounts={accounts} />
-
           </div>
 
           {/* Right: asset list */}
@@ -197,6 +194,7 @@ export default async function HomePage() {
                 positionsWithQuotes={positionsWithQuotes}
                 manualPositions={manualPositions}
                 liabilities={liabilities}
+                incomes={recurringIncomes}
               />
             </div>
             {/* Timestamp — mobile only */}
