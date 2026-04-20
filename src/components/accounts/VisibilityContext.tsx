@@ -23,7 +23,7 @@ const VisibilityCtx = createContext<Ctx>({
 export function VisibilityProvider({ children }: { children: React.ReactNode }) {
   const [showAccounts, setShowAccounts] = useState(true)
   const [showPositions, setShowPositions] = useState(true)
-  const [showLiabilities, setShowLiabilities] = useState(true)
+  const [showLiabilities, setShowLiabilities] = useState(false)
   return (
     <VisibilityCtx.Provider value={{ showAccounts, showPositions, showLiabilities, setShowAccounts, setShowPositions, setShowLiabilities }}>
       {children}
