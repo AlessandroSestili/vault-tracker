@@ -3,6 +3,7 @@ import { AllocationChart, TYPE_COLORS } from '@/components/charts/AllocationChar
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
+import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import type { AccountWithLatestSnapshot, Position, AccountType, Liability } from '@/types'
 import type { PositionWithQuote } from '@/components/accounts/AccountsList'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
@@ -79,6 +80,7 @@ export default async function AnalyticsPage() {
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 
   return (
+    <VisibilityProvider>
     <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
       <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
 
@@ -121,5 +123,6 @@ export default async function AnalyticsPage() {
 
       </div>
     </div>
+    </VisibilityProvider>
   )
 }

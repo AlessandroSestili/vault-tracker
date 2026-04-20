@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
+import { useVisibility } from '@/components/accounts/VisibilityContext'
 
 type Slice = {
   type: AccountType
@@ -21,7 +22,12 @@ const TYPE_COLORS: Record<AccountType, string> = {
   other:      '#a1a1aa',
 }
 
-export function AllocationChart({ slices }: { slices: Slice[] }) {
+export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
+  const { showAccounts, showPositions } = useVisibility()
+  const slices = allSlices.filter(s =>
+    s.type === 'investment' ? showPositions : showAccounts
+  )
+
   if (slices.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-72">

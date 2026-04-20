@@ -17,6 +17,7 @@ import type { AccountWithLatestSnapshot, Position, Liability, LiabilitySubtype, 
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
 import { formatCurrency, formatDate } from '@/lib/formats'
 import { liabilityBalance } from '@/lib/liability-calc'
+import { useVisibility } from './VisibilityContext'
 
 export type { PositionWithQuote }
 
@@ -155,7 +156,7 @@ export function AccountsList({
   }
 
   const hasDebtWithPayment = liabilities.some(l => l.type === 'debt' && l.monthly_payment)
-  const [showLiabilities, setShowLiabilities] = useState(true)
+  const { showAccounts, setShowAccounts, showPositions, setShowPositions, showLiabilities, setShowLiabilities } = useVisibility()
 
   function openSheet(item: SheetItem) {
     if (window.innerWidth >= 768) return
@@ -214,11 +215,23 @@ export function AccountsList({
           <GroupHeader
             label="Conti"
             count={accounts.length}
-            total={formatCurrency(contiTotal)}
+            total={showAccounts ? formatCurrency(contiTotal) : formatCurrency(0)}
             open={openGroups.conti}
             onToggle={() => toggleGroup('conti')}
           />
-          {openGroups.conti && sortedAccounts.map((a) => {
+          {openGroups.conti && (
+            <div className="flex items-center gap-2 pb-2">
+              <button
+                onClick={() => setShowAccounts(!showAccounts)}
+                className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                  showAccounts ? 'text-foreground' : 'text-muted-foreground'
+                }`}
+              >
+                {showAccounts ? 'Nascondi conti' : 'Mostra conti'}
+              </button>
+            </div>
+          )}
+          {openGroups.conti && showAccounts && sortedAccounts.map((a) => {
             const catKey = ACCOUNT_TYPE_TO_CAT[a.type] ?? 'other'
             return (
               <div key={`acc-${a.id}`} className={rowClass} onClick={() => openSheet({ kind: 'account', data: a })}>
@@ -249,11 +262,23 @@ export function AccountsList({
           <GroupHeader
             label="Posizioni"
             count={sortedPositions.length}
-            total={formatCurrency(posizioniTotal)}
+            total={showPositions ? formatCurrency(posizioniTotal) : formatCurrency(0)}
             open={openGroups.posizioni}
             onToggle={() => toggleGroup('posizioni')}
           />
-          {openGroups.posizioni && sortedPositions.map((item) => {
+          {openGroups.posizioni && (
+            <div className="flex items-center gap-2 pb-2">
+              <button
+                onClick={() => setShowPositions(!showPositions)}
+                className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                  showPositions ? 'text-foreground' : 'text-muted-foreground'
+                }`}
+              >
+                {showPositions ? 'Nascondi posizioni' : 'Mostra posizioni'}
+              </button>
+            </div>
+          )}
+          {openGroups.posizioni && showPositions && sortedPositions.map((item) => {
             if (item.kind === 'live') {
               const p = item.data
               const label = p.display_name ?? p.isin ?? ''
@@ -358,7 +383,7 @@ export function AccountsList({
               )}
               {liabilities.length > 0 && (
                 <button
-                  onClick={() => setShowLiabilities(v => !v)}
+                  onClick={() => setShowLiabilities(!showLiabilities)}
                   className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
                     showLiabilities ? 'text-foreground' : 'text-muted-foreground'
                   }`}

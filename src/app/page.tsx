@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
+import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import { MobileFab } from '@/components/ui/mobile-fab'
+import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
 import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
 import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
@@ -118,14 +120,11 @@ export default async function HomePage() {
   ))
   const chartData = computeDailyTotals(accountSnapshots, allPosSnaps)
 
-  // Format total: split number from € symbol
-  const totalFormatted = formatCurrency(total)
-  const totalNumber = totalFormatted.replace(/\s*€$/, '')
-
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
+  const liabNet = creditsTotal - debtsTotal
 
   return (
-    <>
+    <VisibilityProvider>
       <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
         <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
 
@@ -139,12 +138,11 @@ export default async function HomePage() {
               </p>
 
               {/* Total */}
-              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                <span className="text-[44px] md:text-[56px] font-medium tracking-[-1.8px] md:tracking-[-2px] tabular-nums text-foreground leading-none">
-                  {totalNumber}
-                </span>
-                <span className="text-[20px] md:text-[24px] font-normal text-muted-foreground leading-none">€</span>
-              </div>
+              <PortfolioHeroTotal
+                contiTotal={accountsTotal}
+                posizioniTotal={liveTotal + manualPositionsTotal}
+                liabNet={liabNet}
+              />
 
               {/* Stats row */}
               <div className="flex items-center gap-5 mt-[18px] font-mono text-[10.5px] tracking-[0.4px] flex-wrap">
@@ -206,6 +204,6 @@ export default async function HomePage() {
         </div>
       </div>
       <MobileFab accounts={accounts} />
-    </>
+    </VisibilityProvider>
   )
 }
