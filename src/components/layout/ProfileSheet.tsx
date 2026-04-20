@@ -24,7 +24,7 @@ function getStoredTheme(): Theme {
   return (localStorage.getItem('vault-theme') as Theme) ?? 'dark'
 }
 
-const THEMES: { value: Theme; label: string; Icon: React.ElementType }[] = [
+const THEMES: { value: Theme; label: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }[] = [
   { value: 'dark', label: 'Scuro', Icon: Moon },
   { value: 'light', label: 'Chiaro', Icon: Sun },
   { value: 'system', label: 'Sistema', Icon: Monitor },
