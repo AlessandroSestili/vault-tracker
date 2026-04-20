@@ -11,8 +11,17 @@ export interface Quote {
 const TROY_OZ_TO_G = 31.1035
 
 const COMMODITY_MAP: Record<string, { ticker: string; name: string; pricePerG: boolean }> = {
+  // Spot prices (usati come codice custom, non sono ISIN reali)
   XAU: { ticker: 'GC=F', name: 'Oro (spot)', pricePerG: true },
   XAG: { ticker: 'SI=F', name: 'Argento (spot)', pricePerG: true },
+  // Physical gold ETCs — prezzo in USD/troy oz, unità in grammi
+  IE00B4ND3602: { ticker: 'SGLD.L',  name: 'Invesco Physical Gold ETC',     pricePerG: true },
+  GB00B15KXQ89: { ticker: 'PHAU.L',  name: 'WisdomTree Physical Gold ETC',  pricePerG: true },
+  DE000A1E0HR8: { ticker: '4GLD.DE', name: 'Xtrackers Physical Gold ETC',   pricePerG: true },
+  IE00B579F325: { ticker: 'IGLN.L',  name: 'iShares Physical Gold ETC',     pricePerG: true },
+  CH0047533523: { ticker: 'JBGOAM.SW', name: 'Julius Baer Physical Gold',   pricePerG: true },
+  // Physical silver ETCs
+  IE00B4NCWG09: { ticker: 'PHAG.L',  name: 'WisdomTree Physical Silver ETC', pricePerG: true },
 }
 
 async function searchTicker(isin: string): Promise<string | null> {

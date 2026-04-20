@@ -6,7 +6,7 @@ import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
-import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
+import { TodayIncomeBanner, MonthlyProspect } from '@/components/recurring/MonthlyProspect'
 import { formatCurrency } from '@/lib/formats'
 import { fetchEurUsdRate } from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
@@ -128,6 +128,9 @@ export default async function HomePage() {
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
               <PortfolioChart data={chartData} />
             </div>
+
+            {/* Monthly overview */}
+            <MonthlyProspect incomes={recurringIncomes} liabilities={liabilities} accounts={accounts} />
 
           </div>
 

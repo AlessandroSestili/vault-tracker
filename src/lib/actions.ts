@@ -8,6 +8,7 @@ import { DEBT_SUBTYPES } from '@/lib/account-config'
 function revalidateAll() {
   revalidatePath('/')
   revalidatePath('/analytics')
+  revalidatePath('/insights')
 }
 
 async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
