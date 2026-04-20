@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
@@ -19,50 +19,197 @@ const CHILD_R = 1.5
 const DEFAULT_CAM = new THREE.Vector3(0, 2, 9)
 const DEFAULT_TGT = new THREE.Vector3(0, 0, 0)
 
-// ── Planet ──────────────────────────────────────────────────────────────
-function Planet({ clickable, onClick }: { clickable: boolean; onClick: () => void }) {
-  const ref = useRef<THREE.Mesh>(null)
-  const [hov, setHov] = useState(false)
+// ── Noise ────────────────────────────────────────────────────────────────
+function _h(n: number) { const s = Math.sin(n) * 43758.5453; return s - Math.floor(s) }
+function _n2(x: number, y: number) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy)
+  const a = _h(ix + iy * 57.1), b = _h(ix + 1 + iy * 57.1)
+  const c = _h(ix + (iy + 1) * 57.1), d = _h(ix + 1 + (iy + 1) * 57.1)
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
+}
+function fbm(x: number, y: number, seed: number, oct: number) {
+  let v = 0, a = 0.5, f = 1
+  for (let i = 0; i < oct; i++) {
+    v += a * _n2(x * f + seed * 31.7, y * f + seed * 17.3)
+    a *= 0.5; f *= 2
+  }
+  return v
+}
 
-  useFrame((_, dt) => {
-    if (!ref.current) return
-    ref.current.rotation.y += dt * 0.08
-    const ts = clickable && hov ? 1.08 : 1
-    ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, ts, 0.1))
+// ── Canvas texture factory ───────────────────────────────────────────────
+type RGBA = [number, number, number, number]
+function mkTex(w: number, h: number, fill: (x: number, y: number) => RGBA): THREE.CanvasTexture {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+  const ctx = cv.getContext('2d')!
+  const img = ctx.createImageData(w, h)
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const [r, g, b, al] = fill(x, y); const i = (y * w + x) * 4
+    img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = al
+  }
+  ctx.putImageData(img, 0, 0)
+  return new THREE.CanvasTexture(cv)
+}
+
+function clamp(v: number) { return Math.max(0, Math.min(255, Math.round(v))) }
+
+// Earth-like terrain with ocean / land / highlands / snow
+function makePlanetTex(): THREE.CanvasTexture {
+  return mkTex(512, 256, (x, y) => {
+    const n = fbm(x / 512 * 6, y / 256 * 6, 1, 8)
+    if (n < 0.40) { const t = n / 0.40; return [clamp(20 + t * 30), clamp(60 + t * 50), clamp(140 + t * 60), 255] }
+    if (n < 0.48) return [80, 140, 130, 255]
+    if (n < 0.65) { const t = (n - 0.48) / 0.17; return [clamp(50 + t * 60), clamp(110 + t * 70), clamp(30 + t * 15), 255] }
+    if (n < 0.78) return [130, 100, 60, 255]
+    const v = clamp(180 + (n - 0.78) / 0.22 * 75); return [v, v, v, 255]
   })
+}
 
+// Grayscale cloud density — used as alphaMap on a white mesh
+function makeCloudTex(): THREE.CanvasTexture {
+  return mkTex(512, 256, (x, y) => {
+    const n = fbm(x / 512 * 8, y / 256 * 8, 42, 6)
+    const v = clamp((n - 0.50) * 500)
+    return [v, v, v, 255]
+  })
+}
+
+// Per-satellite surface texture derived from its category color
+function makeSatTex(color: string, seed: number): THREE.CanvasTexture {
+  const c = new THREE.Color(color)
+  return mkTex(256, 128, (x, y) => {
+    const n1 = fbm(x / 256 * 5, y / 128 * 5, seed, 6)
+    const n2 = fbm(x / 256 * 7.5 + 3, y / 128 * 7.5 + 7, seed + 5, 4)
+    const v = (n1 * 0.7 + n2 * 0.3 - 0.5) * 0.65
+    return [clamp((c.r + v) * 255), clamp((c.g + v * 0.8) * 255), clamp((c.b + v * 1.1) * 255), 255]
+  })
+}
+
+// Roughness variation map
+function makeRoughTex(seed: number, w = 256, h = 128): THREE.CanvasTexture {
+  return mkTex(w, h, (x, y) => {
+    const n = fbm(x / w * 4, y / h * 4, seed + 99, 5)
+    const v = clamp(n * 255); return [v, v, v, 255]
+  })
+}
+
+// ── Atmosphere rim-glow shader ───────────────────────────────────────────
+const ATMO_V = `
+  varying vec3 vN; varying vec3 vV;
+  void main() {
+    vN = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vV = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }
+`
+const ATMO_F = `
+  uniform vec3 gc; uniform float gi;
+  varying vec3 vN; varying vec3 vV;
+  void main() {
+    float rim = 1.0 - max(0.0, dot(vN, vV));
+    gl_FragColor = vec4(gc, pow(rim, 2.2) * gi);
+  }
+`
+
+function AtmoGlow({ r, color, scale = 1.22, intensity = 0.85 }: {
+  r: number; color: string; scale?: number; intensity?: number
+}) {
+  const u = useMemo(() => ({
+    gc: { value: new THREE.Color(color) },
+    gi: { value: intensity },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [])
   return (
-    <mesh
-      ref={ref}
-      onClick={clickable ? (e) => { e.stopPropagation(); onClick() } : undefined}
-      onPointerOver={clickable ? () => { setHov(true); document.body.style.cursor = 'pointer' } : undefined}
-      onPointerOut={clickable ? () => { setHov(false); document.body.style.cursor = 'auto' } : undefined}
-    >
-      <sphereGeometry args={[0.85, 64, 64]} />
-      <meshStandardMaterial
-        color="#bef264" emissive="#bef264" emissiveIntensity={0.18} roughness={0.35} metalness={0.1}
+    <mesh scale={scale}>
+      <sphereGeometry args={[r, 32, 32]} />
+      <shaderMaterial
+        uniforms={u}
+        vertexShader={ATMO_V}
+        fragmentShader={ATMO_F}
+        transparent
+        side={THREE.FrontSide}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
       />
     </mesh>
   )
 }
 
-// ── Category satellite ──────────────────────────────────────────────────
+// ── Planet ───────────────────────────────────────────────────────────────
+function Planet({ clickable, onClick }: { clickable: boolean; onClick: () => void }) {
+  const gRef = useRef<THREE.Group>(null)
+  const sRef = useRef<THREE.Mesh>(null)
+  const cRef = useRef<THREE.Mesh>(null)
+  const [hov, setHov] = useState(false)
+
+  const pTex = useMemo(makePlanetTex, [])
+  const cloudTex = useMemo(makeCloudTex, [])
+  const rTex = useMemo(() => makeRoughTex(1, 512, 256), [])
+  useEffect(() => () => { pTex.dispose(); cloudTex.dispose(); rTex.dispose() }, [pTex, cloudTex, rTex])
+
+  useFrame((_, dt) => {
+    if (sRef.current) sRef.current.rotation.y += dt * 0.06
+    if (cRef.current) cRef.current.rotation.y += dt * 0.10
+    if (gRef.current) {
+      const ts = clickable && hov ? 1.08 : 1
+      gRef.current.scale.setScalar(THREE.MathUtils.lerp(gRef.current.scale.x, ts, 0.1))
+    }
+  })
+
+  return (
+    <group
+      ref={gRef}
+      onClick={clickable ? (e) => { e.stopPropagation(); onClick() } : undefined}
+      onPointerOver={clickable ? () => { setHov(true); document.body.style.cursor = 'pointer' } : undefined}
+      onPointerOut={clickable ? () => { setHov(false); document.body.style.cursor = 'auto' } : undefined}
+    >
+      {/* Surface */}
+      <mesh ref={sRef}>
+        <sphereGeometry args={[0.85, 64, 64]} />
+        <meshStandardMaterial map={pTex} roughnessMap={rTex} roughness={0.82} metalness={0} />
+      </mesh>
+      {/* Cloud layer */}
+      <mesh ref={cRef} scale={1.02}>
+        <sphereGeometry args={[0.85, 48, 48]} />
+        <meshStandardMaterial
+          alphaMap={cloudTex}
+          color="#ffffff"
+          transparent
+          roughness={1}
+          metalness={0}
+          opacity={0.75}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Atmosphere */}
+      <AtmoGlow r={0.85} color="#7dd3fc" scale={1.22} intensity={0.85} />
+    </group>
+  )
+}
+
+// ── Category satellite ───────────────────────────────────────────────────
 function CatSat({
-  posRef, size, color, dimmed, onClick,
+  posRef, size, color, dimmed, onClick, seed,
 }: {
-  posRef: THREE.Vector3
-  size: number; color: string; dimmed: boolean; onClick: () => void
+  posRef: THREE.Vector3; size: number; color: string
+  dimmed: boolean; onClick: () => void; seed: number
 }) {
   const ref = useRef<THREE.Mesh>(null)
   const [hov, setHov] = useState(false)
 
+  const sTex = useMemo(() => makeSatTex(color, seed), [color, seed])
+  const rTex = useMemo(() => makeRoughTex(seed), [seed])
+  useEffect(() => () => { sTex.dispose(); rTex.dispose() }, [sTex, rTex])
+
   useFrame(() => {
     if (!ref.current) return
     ref.current.position.copy(posRef)
+    ref.current.rotation.y += 0.004
     ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, hov ? 1.14 : 1, 0.1))
     const mat = ref.current.material as THREE.MeshStandardMaterial
     mat.opacity = THREE.MathUtils.lerp(mat.opacity, dimmed ? 0.15 : 1, 0.07)
-    mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, hov ? 0.55 : 0.28, 0.1)
+    mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, hov ? 0.45 : 0.18, 0.1)
   })
 
   return (
@@ -74,14 +221,20 @@ function CatSat({
     >
       <sphereGeometry args={[size, 32, 32]} />
       <meshStandardMaterial
-        color={color} emissive={color} emissiveIntensity={0.28}
-        roughness={0.25} metalness={0.1} transparent opacity={1}
+        map={sTex}
+        roughnessMap={rTex}
+        roughness={0.65}
+        metalness={0.05}
+        emissive={color}
+        emissiveIntensity={0.18}
+        transparent
+        opacity={1}
       />
     </mesh>
   )
 }
 
-// ── Child satellite ─────────────────────────────────────────────────────
+// ── Child satellite ──────────────────────────────────────────────────────
 function ChildSat({
   parentPosRef, anglesRef, index, size, color,
 }: {
@@ -113,7 +266,7 @@ function ChildSat({
   )
 }
 
-// ── Scene ───────────────────────────────────────────────────────────────
+// ── Scene ────────────────────────────────────────────────────────────────
 function Scene({
   categories, total, selected, onSelect, onBack,
 }: {
@@ -187,9 +340,9 @@ function Scene({
   return (
     <>
       <OrbitControls ref={ctrlRef} enablePan={false} minDistance={5} maxDistance={14} />
-      <ambientLight intensity={0.3} />
-      <pointLight position={[8, 8, 8]} intensity={2.2} />
-      <pointLight position={[-5, -4, -6]} intensity={0.5} color="#60a5fa" />
+      <ambientLight intensity={0.35} />
+      <pointLight position={[8, 8, 8]} intensity={2.4} color="#fff5e0" />
+      <pointLight position={[-5, -4, -6]} intensity={0.6} color="#60a5fa" />
 
       <Stars radius={80} depth={40} count={1200} factor={3} saturation={0} fade speed={0.4} />
 
@@ -207,6 +360,7 @@ function Scene({
           posRef={catPosRefs.current[i]}
           size={0.22 + (Math.abs(cat.value) / maxVal) * 0.48}
           color={cat.color}
+          seed={i}
           dimmed={!!selected && selected.id !== cat.id}
           onClick={() => {
             childAngs.current = (cat.children ?? []).map((_, j) =>
@@ -234,7 +388,7 @@ function Scene({
   )
 }
 
-// ── Info panel ──────────────────────────────────────────────────────────
+// ── Info panel ───────────────────────────────────────────────────────────
 function InfoPanel({ selected }: { selected: OrbitCategory | null }) {
   if (!selected) return null
   return (
@@ -265,7 +419,7 @@ function InfoPanel({ selected }: { selected: OrbitCategory | null }) {
   )
 }
 
-// ── Export ──────────────────────────────────────────────────────────────
+// ── Export ───────────────────────────────────────────────────────────────
 export function OrbitChart3D({ categories, total }: { categories: OrbitCategory[]; total: number }) {
   const [selected, setSelected] = useState<OrbitCategory | null>(null)
   const handleBack = useCallback(() => setSelected(null), [])
