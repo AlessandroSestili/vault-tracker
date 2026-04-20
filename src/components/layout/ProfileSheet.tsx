@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LogOut, Moon, Sun, Monitor, User, Mail } from 'lucide-react'
+import { LogOut, Moon, Sun, Monitor, User, Mail, Bell, BellOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
@@ -61,6 +61,38 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
   }
 
   const initials = email ? email.slice(0, 2).toUpperCase() : 'V'
+
+  const [notifStatus, setNotifStatus] = useState<'unsupported' | 'denied' | 'subscribed' | 'unsubscribed'>('unsupported')
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    if (Notification.permission === 'denied') { setNotifStatus('denied'); return }
+    navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription()
+      setNotifStatus(sub ? 'subscribed' : 'unsubscribed')
+    })
+  }, [])
+
+  async function handleNotifToggle() {
+    const reg = await navigator.serviceWorker.ready
+    if (notifStatus === 'subscribed') {
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        await sub.unsubscribe()
+        await fetch('/api/push/subscribe', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) })
+      }
+      setNotifStatus('unsubscribed')
+    } else {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') { setNotifStatus('denied'); return }
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) })
+      setNotifStatus('subscribed')
+    }
+  }
 
   return (
     <>
@@ -123,6 +155,22 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
               })}
             </div>
           </div>
+
+          {/* Notifiche */}
+          {notifStatus !== 'unsupported' && (
+            <div className="px-4 pt-1 pb-1">
+              <button
+                onClick={handleNotifToggle}
+                disabled={notifStatus === 'denied'}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[14px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {notifStatus === 'subscribed'
+                  ? <BellOff className="w-4 h-4" strokeWidth={1.5} />
+                  : <Bell className="w-4 h-4" strokeWidth={1.5} />}
+                {notifStatus === 'subscribed' ? 'Disattiva notifiche' : notifStatus === 'denied' ? 'Notifiche bloccate' : 'Attiva notifiche'}
+              </button>
+            </div>
+          )}
 
           {/* Support + Logout */}
           <div className="px-4 pb-4 pt-1 space-y-0.5">
