@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { RefreshCcw, Pencil, Trash2, Settings2, ChevronRight, BarChart2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote } from '@/types'
+import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
 
 export type SheetItem =
   | { kind: 'account'; data: AccountWithLatestSnapshot }
   | { kind: 'live-position'; data: PositionWithQuote }
   | { kind: 'manual-position'; data: Position }
   | { kind: 'liability'; data: Liability }
+  | { kind: 'recurring'; data: RecurringIncome }
 
 export type SheetAction =
   | { kind: 'edit-account'; data: AccountWithLatestSnapshot }
@@ -17,10 +18,12 @@ export type SheetAction =
   | { kind: 'edit-live'; data: PositionWithQuote }
   | { kind: 'edit-manual'; data: Position }
   | { kind: 'edit-liability'; data: Liability }
+  | { kind: 'edit-recurring'; data: RecurringIncome }
   | { kind: 'delete-account'; data: AccountWithLatestSnapshot }
   | { kind: 'delete-live'; data: PositionWithQuote }
   | { kind: 'delete-manual'; data: Position }
   | { kind: 'delete-liability'; data: Liability }
+  | { kind: 'delete-recurring'; data: RecurringIncome }
 
 interface Props {
   item: SheetItem | null
@@ -57,6 +60,12 @@ function getActions(item: SheetItem): ActionRow[] {
       { icon: <Trash2 className="w-4 h-4" />, label: 'Elimina', destructive: true, action: { kind: 'delete-manual', data: item.data } },
     ]
   }
+  if (item.kind === 'recurring') {
+    return [
+      { icon: <Pencil className="w-4 h-4" />, label: 'Modifica', action: { kind: 'edit-recurring', data: item.data } },
+      { icon: <Trash2 className="w-4 h-4" />, label: 'Elimina', destructive: true, action: { kind: 'delete-recurring', data: item.data } },
+    ]
+  }
   return [
     { icon: <Settings2 className="w-4 h-4" />, label: 'Modifica', action: { kind: 'edit-liability', data: item.data } },
     { icon: <Trash2 className="w-4 h-4" />, label: 'Elimina', destructive: true, action: { kind: 'delete-liability', data: item.data } },
@@ -79,6 +88,7 @@ export function ItemActionSheet({ item, open, onOpenChange, onAction }: Props) {
   const detailHref =
     item.kind === 'account' ? `/account/${item.data.id}` :
     item.kind === 'live-position' || item.kind === 'manual-position' ? `/position/${item.data.id}` :
+    item.kind === 'recurring' ? '/' :
     `/liability/${item.data.id}`
 
   return (

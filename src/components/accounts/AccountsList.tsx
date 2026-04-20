@@ -163,6 +163,8 @@ export function AccountsList({
   }
 
   function onAction(action: SheetAction) {
+    if (action.kind === 'edit-recurring') { setEditingIncome(action.data); return }
+    if (action.kind === 'delete-recurring') { setDeletingIncome(action.data); return }
     setModal(action as ActiveModal)
   }
 
@@ -357,7 +359,7 @@ export function AccountsList({
             const isToday = income.day_of_month === todayDay
             const isFuture = income.day_of_month > todayDay
             return (
-              <div key={`inc-${income.id}`} className={`${rowClass} ${isFuture ? 'opacity-50' : ''}`}>
+              <div key={`inc-${income.id}`} className={`${rowClass} ${isFuture ? 'opacity-50' : ''}`} onClick={() => openSheet({ kind: 'recurring', data: income })}>
                 <LogoAvatar name={income.name} catColor={CAT_DOT.credit} />
                 <div className="flex-1 min-w-0 ml-3">
                   <div className="flex items-center gap-1.5">
