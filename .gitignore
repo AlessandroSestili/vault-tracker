@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Guide documents
 vault-tracker-guida.*
+
+# Playwright
+tests/.auth/
+test-results/
+playwright-report/
