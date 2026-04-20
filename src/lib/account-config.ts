@@ -1,4 +1,4 @@
-import type { AccountType } from '@/types'
+import type { AccountType, LiabilitySubtype } from '@/types'
 
 interface AccountTypeConfig {
   label: string
@@ -15,3 +15,13 @@ export const ACCOUNT_TYPE_CONFIG: Record<AccountType, AccountTypeConfig> = {
 
 export const ACCOUNT_TYPE_OPTIONS = (Object.entries(ACCOUNT_TYPE_CONFIG) as [AccountType, AccountTypeConfig][])
   .map(([value, { label }]) => ({ value, label }))
+
+export const DEBT_SUBTYPES: LiabilitySubtype[] = ['mortgage', 'installment', 'informal_debt']
+
+export const SUBTYPE_LABEL: Record<LiabilitySubtype, string> = {
+  mortgage:        'Mutuo',
+  installment:     'Rata fissa',
+  informal_debt:   'Debito',
+  dated_credit:    'Credito',
+  informal_credit: 'Credito',
+}

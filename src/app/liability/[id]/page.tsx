@@ -4,6 +4,7 @@ import { BackButton } from '@/components/ui/back-button'
 import { DetailChart } from '@/components/charts/DetailChart'
 import { formatCurrency, formatDate } from '@/lib/formats'
 import { liabilityBalance, isStructuredDebt } from '@/lib/liability-calc'
+import { SUBTYPE_LABEL } from '@/lib/account-config'
 
 function computeSchedule(balance: number, monthlyPayment: number, interestRate: number, maxMonths = 120) {
   const r = interestRate / 1200
@@ -18,11 +19,6 @@ function computeSchedule(balance: number, monthlyPayment: number, interestRate: 
     rows.push({ date: d.toISOString().slice(0, 7), balance: Math.round(b * 100) / 100 })
   }
   return rows
-}
-
-const SUBTYPE_LABEL: Record<string, string> = {
-  mortgage: 'Mutuo', installment: 'Rata fissa', informal_debt: 'Debito',
-  dated_credit: 'Credito', informal_credit: 'Credito',
 }
 
 export default async function LiabilityDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,7 +52,7 @@ export default async function LiabilityDetailPage({ params }: { params: Promise<
 
       <div>
         <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-1">
-          {SUBTYPE_LABEL[liability.subtype] ?? liability.subtype}
+          {SUBTYPE_LABEL[liability.subtype as keyof typeof SUBTYPE_LABEL] ?? liability.subtype}
         </p>
         <h1 className="text-[24px] font-medium text-foreground tracking-[-0.5px]">{liability.name}</h1>
         {liability.counterparty && (

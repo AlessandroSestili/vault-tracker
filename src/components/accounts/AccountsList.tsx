@@ -13,21 +13,13 @@ import { EditRecurringIncomeDialog } from '@/components/recurring/RecurringIncom
 import { ItemActionSheet } from './ItemActionSheet'
 import type { SheetItem, SheetAction } from './ItemActionSheet'
 import { deleteAccount, deletePosition, deleteLiability, confirmRecurringIncome, deleteRecurringIncome } from '@/lib/actions'
-import type { AccountWithLatestSnapshot, Position, Liability, LiabilitySubtype, PositionWithQuote, RecurringIncome } from '@/types'
-import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
+import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
+import { ACCOUNT_TYPE_CONFIG, SUBTYPE_LABEL } from '@/lib/account-config'
 import { formatCurrency, formatDate } from '@/lib/formats'
 import { liabilityBalance } from '@/lib/liability-calc'
 import { useVisibility } from './VisibilityContext'
 
 export type { PositionWithQuote }
-
-const SUBTYPE_LABEL: Record<LiabilitySubtype, string> = {
-  mortgage:        'Mutuo',
-  installment:     'Rata fissa',
-  informal_debt:   'Debito',
-  dated_credit:    'Credito',
-  informal_credit: 'Credito',
-}
 
 const CAT_DOT = {
   invest:  'oklch(0.82 0.18 130)',

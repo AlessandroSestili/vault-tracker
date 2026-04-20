@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { AccountType, LiabilitySubtype } from '@/types'
+import { DEBT_SUBTYPES } from '@/lib/account-config'
 
 function revalidateAll() {
   revalidatePath('/')
@@ -190,8 +191,6 @@ export async function updateManualPosition(id: string, data: {
 }
 
 // ── Liabilities ───────────────────────────────────────────────────────────────
-
-const DEBT_SUBTYPES: LiabilitySubtype[] = ['mortgage', 'installment', 'informal_debt']
 
 export async function createLiability(data: {
   name: string

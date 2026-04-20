@@ -1,62 +1,27 @@
-import { createClient } from '@/lib/supabase/server'
 import { AllocationChart, TYPE_COLORS } from '@/components/charts/AllocationChart'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
-import type { AccountWithLatestSnapshot, Position, AccountType, Liability } from '@/types'
-import type { PositionWithQuote } from '@/components/accounts/AccountsList'
+import type { AccountType } from '@/types'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
-import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
-import { liabilityBalance } from '@/lib/liability-calc'
+import { fetchEurUsdRate } from '@/lib/yahoo-finance'
+import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import type { Slice } from '@/components/charts/AllocationChart'
-
-async function getAccounts(): Promise<AccountWithLatestSnapshot[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('accounts_with_latest').select('*').order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
-  return data ?? []
-}
-
-async function getPositions(): Promise<Position[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('positions').select('*').order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
-  return data ?? []
-}
-
-async function getLiabilities(): Promise<Liability[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('liabilities').select('*').order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
-  return data ?? []
-}
 
 export default async function AnalyticsPage() {
   const [accounts, allPositions, liabilities, eurUsdRate] = await Promise.all([
-    getAccounts(), getPositions(), getLiabilities(), fetchEurUsdRate(),
+    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchEurUsdRate(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
   const manualPositions = allPositions.filter((p) => p.is_manual)
 
-  const isins = livePositions.map((p) => p.isin!)
-  const quotes = isins.length > 0 ? await fetchQuotesByIsins(isins) : {}
+  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, eurUsdRate)
 
-  const positionsWithQuotes: PositionWithQuote[] = livePositions
-    .filter((p) => p.isin && quotes[p.isin])
-    .map((p) => {
-      const q = quotes[p.isin!]
-      const priceEur = toEur(q.price, q.currency, eurUsdRate)
-      return { ...p, price: priceEur, value: priceEur * p.units!, currency: 'EUR', quoteName: q.name, changePercent: q.changePercent }
-    })
-
-  const liveTotal = positionsWithQuotes.reduce((s, p) => s + p.value, 0)
-  const manualTotal = manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
-  const accountsTotal = accounts.reduce((s, a) => s + (a.latest_value ?? 0), 0)
-  const debtsTotal = liabilities.filter((l) => l.type === 'debt').reduce((s, l) => s + liabilityBalance(l), 0)
-  const creditsTotal = liabilities.filter((l) => l.type === 'credit').reduce((s, l) => s + liabilityBalance(l), 0)
-  const total = liveTotal + manualTotal + accountsTotal + creditsTotal - debtsTotal
+  const { liveTotal, manualTotal } = computePortfolioTotals(
+    accounts, positionsWithQuotes, manualPositions, liabilities
+  )
 
   const grouped: Partial<Record<AccountType | 'liability', number>> = {}
   if (liveTotal + manualTotal > 0) grouped['investment'] = liveTotal + manualTotal

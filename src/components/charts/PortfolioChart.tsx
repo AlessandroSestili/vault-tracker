@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
-import { formatCurrency } from '@/lib/formats'
+import { formatCurrency, formatChartDate } from '@/lib/formats'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 
 type DataPoint = { day: string; total: number }
@@ -31,11 +31,7 @@ function filterByPeriod(data: DataPoint[], period: Period): DataPoint[] {
 }
 
 function formatAxisDate(day: string, period: Period): string {
-  const d = new Date(day)
-  if (period === '1S' || period === '1M') {
-    return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(d)
-  }
-  return new Intl.DateTimeFormat('it-IT', { month: 'short', year: '2-digit' }).format(d)
+  return formatChartDate(day, period === '1S' || period === '1M')
 }
 
 export function PortfolioChart({ data }: { data: DataPoint[] }) {
