@@ -123,7 +123,6 @@ function GroupHeader({
 }
 
 const todayDay = new Date().getDate()
-const currentMonthName = new Date().toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
 
 export function AccountsList({
   accounts,
@@ -156,6 +155,7 @@ export function AccountsList({
   }
 
   const hasDebtWithPayment = liabilities.some(l => l.type === 'debt' && l.monthly_payment)
+  const [showLiabilities, setShowLiabilities] = useState(true)
 
   function openSheet(item: SheetItem) {
     if (window.innerWidth >= 768) return
@@ -323,38 +323,48 @@ export function AccountsList({
         </div>
       )}
 
-      {/* ── PROSPETTO ── */}
+      {/* ── DEBITI & CREDITI ── */}
       {(liabilities.length > 0 || incomes.length > 0) && (
         <div>
           <GroupHeader
-            label={`Prospetto · ${currentMonthName}`}
+            label="Debiti & Crediti"
             count={liabilities.length + incomes.length}
             total={`${prospectoNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(prospectoNet))}`}
             totalColor={prospectoNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
             open={openGroups.liabilities}
             onToggle={() => toggleGroup('liabilities')}
-          >
-            {hasDebtWithPayment && openGroups.liabilities && (
-              <div
-                className="flex items-center gap-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5 ml-2"
-                onClick={e => e.stopPropagation()}
-              >
-                {(['totale', 'rata'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={(e) => { e.stopPropagation(); setDebtView(mode) }}
-                    className={`px-2.5 py-1 rounded-md font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
-                      debtView === mode
-                        ? 'bg-white/[0.08] text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            )}
-          </GroupHeader>
+          />
+          {openGroups.liabilities && (
+            <div className="flex items-center gap-2 pb-2">
+              {hasDebtWithPayment && (
+                <div className="flex items-center gap-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
+                  {(['totale', 'rata'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setDebtView(mode)}
+                      className={`px-2.5 py-1 rounded-md font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                        debtView === mode
+                          ? 'bg-white/[0.08] text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {liabilities.length > 0 && (
+                <button
+                  onClick={() => setShowLiabilities(v => !v)}
+                  className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                    showLiabilities ? 'text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
+                  {showLiabilities ? 'Nascondi deb/cred' : 'Mostra deb/cred'}
+                </button>
+              )}
+            </div>
+          )}
           {openGroups.liabilities && incomes.map((income) => {
             const isToday = income.day_of_month === todayDay
             const isFuture = income.day_of_month > todayDay
@@ -386,7 +396,7 @@ export function AccountsList({
               </div>
             )
           })}
-          {openGroups.liabilities && sortedLiabilities.map((l) => {
+          {openGroups.liabilities && showLiabilities && sortedLiabilities.map((l) => {
             const isDebt = l.type === 'debt'
             const balance = liabilityBalance(l)
             const showRata = isDebt && debtView === 'rata' && !!l.monthly_payment
