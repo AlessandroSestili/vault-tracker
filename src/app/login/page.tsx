@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { VaultIcon } from '@/components/ui/vault-icon'
 
 type Mode = 'login' | 'register'
 
@@ -61,8 +62,8 @@ export default function LoginPage() {
 
       {/* Logo block */}
       <div className="w-full max-w-[440px] flex flex-col items-center mt-[calc(60px+env(safe-area-inset-top))] mb-auto">
-        <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center mb-7">
-          <span className="font-mono text-[22px] font-bold text-[#09090b]">V</span>
+        <div className="mb-7">
+          <VaultIcon size={52} />
         </div>
         <h1 className="text-[22px] font-medium tracking-[-0.4px] text-[#fafafa] mb-1.5">
           Vault Tracker

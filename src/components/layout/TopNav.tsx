@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { ProfileSheet } from './ProfileSheet'
+import { VaultIcon } from '@/components/ui/vault-icon'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -36,9 +37,7 @@ export function TopNav() {
         {/* Mobile: V badge + Vault left, search + user right */}
         <div className="flex md:hidden items-center w-full">
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-[18px] h-[18px] rounded-[4px] bg-[var(--primary)] flex items-center justify-center">
-              <span className="font-mono text-[11px] font-bold text-[#09090b] leading-none">V</span>
-            </div>
+            <VaultIcon size={18} />
             <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
           </div>
           <div className="flex items-center gap-2">
@@ -49,9 +48,7 @@ export function TopNav() {
         {/* Desktop: logo left, nav center, logout right */}
         <div className="hidden md:flex flex-1 items-center">
           <div className="flex items-center gap-2">
-            <div className="w-[18px] h-[18px] rounded-[4px] bg-[var(--primary)] flex items-center justify-center">
-              <span className="font-mono text-[11px] font-bold text-[#09090b] leading-none">V</span>
-            </div>
+            <VaultIcon size={18} />
             <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
           </div>
         </div>
