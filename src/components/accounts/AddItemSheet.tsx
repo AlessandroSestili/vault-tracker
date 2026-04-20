@@ -6,32 +6,34 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { AddAccountDialog } from './AddAccountDialog'
 import { AddPositionDialog } from '@/components/positions/AddPositionDialog'
 import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
+import { AddRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
+import type { AccountWithLatestSnapshot } from '@/types'
 
-type AddKind = 'account' | 'position' | 'liability' | null
+type AddKind = 'account' | 'position' | 'liability' | 'recurring' | null
 
-const OPTIONS = [
+const BASE_OPTIONS = [
   {
     kind: 'account' as const,
-    icon: '⬜',
     label: 'Conto',
     sub: 'Corrente, pensione, crypto wallet',
-    iconBg: 'rgba(255,255,255,0.04)',
   },
   {
     kind: 'position' as const,
-    icon: '📈',
     label: 'Posizione',
     sub: 'ETF, azione o asset manuale',
-    iconBg: 'rgba(255,255,255,0.04)',
   },
   {
     kind: 'liability' as const,
-    icon: '⬡',
     label: 'Debito · Credito',
     sub: 'Mutuo, prestito, credito a scadenza',
-    iconBg: 'rgba(255,255,255,0.04)',
   },
 ]
+
+const RECURRING_OPTION = {
+  kind: 'recurring' as const,
+  label: 'Entrata ricorrente',
+  sub: 'Stipendio, affitto, abbonamento',
+}
 
 function SheetOption({ label, sub, onClick }: { label: string; sub: string; onClick: () => void }) {
   return (
@@ -51,11 +53,19 @@ function SheetOption({ label, sub, onClick }: { label: string; sub: string; onCl
   )
 }
 
-export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' | 'lime-cta' }) {
+export function AddItemSheet({
+  variant = 'icon',
+  accounts,
+}: {
+  variant?: 'icon' | 'fab' | 'lime-cta'
+  accounts?: AccountWithLatestSnapshot[]
+}) {
   const [sheet, setSheet] = useState(false)
   const [adding, setAdding] = useState<AddKind>(null)
 
-  function choose(kind: 'account' | 'position' | 'liability') {
+  const options = accounts ? [...BASE_OPTIONS, RECURRING_OPTION] : BASE_OPTIONS
+
+  function choose(kind: AddKind) {
     setSheet(false)
     setTimeout(() => setAdding(kind), 200)
   }
@@ -99,7 +109,7 @@ export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' | 
             <p className="text-[20px] font-medium text-foreground tracking-[-0.4px]">Aggiungi al patrimonio</p>
           </div>
           <div className="pb-3">
-            {OPTIONS.map(({ kind, label, sub }) => (
+            {options.map(({ kind, label, sub }) => (
               <SheetOption key={kind} label={label} sub={sub} onClick={() => choose(kind)} />
             ))}
           </div>
@@ -109,6 +119,9 @@ export function AddItemSheet({ variant = 'icon' }: { variant?: 'icon' | 'fab' | 
       <AddAccountDialog  open={adding === 'account'}   onOpenChange={(o) => !o && setAdding(null)} />
       <AddPositionDialog open={adding === 'position'}  onOpenChange={(o) => !o && setAdding(null)} />
       <AddLiabilityDialog open={adding === 'liability'} onOpenChange={(o) => !o && setAdding(null)} />
+      {accounts && (
+        <AddRecurringIncomeDialog accounts={accounts} open={adding === 'recurring'} onOpenChange={(o) => !o && setAdding(null)} />
+      )}
     </>
   )
 }

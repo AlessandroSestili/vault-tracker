@@ -25,8 +25,20 @@ const schema = z.object({
 
 type FormInput = z.input<typeof schema>
 
-export function AddRecurringIncomeDialog({ accounts }: { accounts: AccountWithLatestSnapshot[] }) {
-  const [open, setOpen] = useState(false)
+export function AddRecurringIncomeDialog({
+  accounts,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: {
+  accounts: AccountWithLatestSnapshot[]
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (controlledOnOpenChange ?? setInternalOpen) : setInternalOpen
+
   const [isPending, startTransition] = useTransition()
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormInput>({
     resolver: zodResolver(schema),
@@ -49,7 +61,7 @@ export function AddRecurringIncomeDialog({ accounts }: { accounts: AccountWithLa
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2} />Aggiungi entrata</Button>} />
+      {!isControlled && <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" strokeWidth={2} />Aggiungi entrata</Button>} />}
       <DialogContent className="bg-popover border-border">
         <DialogHeader>
           <DialogTitle>Nuova entrata ricorrente</DialogTitle>

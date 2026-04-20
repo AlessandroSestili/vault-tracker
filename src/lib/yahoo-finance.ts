@@ -8,7 +8,15 @@ export interface Quote {
   change: number | undefined
 }
 
+const TROY_OZ_TO_G = 31.1035
+
+const COMMODITY_MAP: Record<string, { ticker: string; name: string; pricePerG: boolean }> = {
+  XAU: { ticker: 'GC=F', name: 'Oro (spot)', pricePerG: true },
+  XAG: { ticker: 'SI=F', name: 'Argento (spot)', pricePerG: true },
+}
+
 async function searchTicker(isin: string): Promise<string | null> {
+  if (COMMODITY_MAP[isin]) return COMMODITY_MAP[isin].ticker
   const res = await fetch(
     `https://query1.finance.yahoo.com/v1/finance/search?q=${isin}&quotesCount=1&newsCount=0`,
     { next: { revalidate: 300 } }
@@ -37,11 +45,14 @@ async function fetchQuote(ticker: string): Promise<Omit<Quote, 'isin' | 'ticker'
 }
 
 export async function fetchQuoteByIsin(isin: string): Promise<Quote | null> {
+  const commodity = COMMODITY_MAP[isin]
   const ticker = await searchTicker(isin)
   if (!ticker) return null
   const quote = await fetchQuote(ticker)
   if (!quote) return null
-  return { isin, ticker, ...quote }
+  const price = commodity?.pricePerG ? quote.price / TROY_OZ_TO_G : quote.price
+  const name = commodity?.name ?? quote.name
+  return { isin, ticker, ...quote, price, name }
 }
 
 export async function fetchQuotesByIsins(isins: string[]): Promise<Record<string, Quote>> {

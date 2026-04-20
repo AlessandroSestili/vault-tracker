@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { Pencil, Trash2, CheckCircle2, Loader2 } from 'lucide-react'
-import { formatCurrency } from '@/lib/formats'
+import { formatCurrency, formatDate } from '@/lib/formats'
 import { confirmRecurringIncome, deleteRecurringIncome } from '@/lib/actions'
+import { liabilityBalance } from '@/lib/liability-calc'
 import { EditRecurringIncomeDialog } from './RecurringIncomeDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { RecurringIncome, Liability, AccountWithLatestSnapshot } from '@/types'
@@ -32,6 +33,15 @@ function statusLabel(day: number) {
   return null
 }
 
+function liabilitySubLabel(l: Liability): string {
+  if (l.monthly_payment && l.monthly_payment > 0) {
+    return l.next_payment_date ? `rata · scade ${formatDate(l.next_payment_date)}` : 'rata mensile'
+  }
+  if (l.due_date) return `scade ${formatDate(l.due_date)}`
+  if (l.counterparty) return l.counterparty
+  return l.subtype === 'informal_debt' ? 'debito' : l.subtype === 'informal_credit' ? 'credito' : 'totale'
+}
+
 export function MonthlyProspect({
   incomes,
   liabilities,
@@ -46,15 +56,15 @@ export function MonthlyProspect({
   const [confirming, setConfirming] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const monthlyDebts = liabilities.filter(
-    (l) => l.type === 'debt' && l.monthly_payment && l.monthly_payment > 0
-  )
+  const credits = liabilities.filter(l => l.type === 'credit')
+  const debts = liabilities.filter(l => l.type === 'debt')
 
   const totalIn = incomes.reduce((s, i) => s + i.amount, 0)
-  const totalOut = monthlyDebts.reduce((s, l) => s + (l.monthly_payment ?? 0), 0)
+    + credits.reduce((s, l) => s + liabilityBalance(l), 0)
+  const totalOut = debts.reduce((s, l) => s + (l.monthly_payment ?? liabilityBalance(l)), 0)
   const net = totalIn - totalOut
 
-  if (incomes.length === 0 && monthlyDebts.length === 0) return null
+  if (incomes.length === 0 && liabilities.length === 0) return null
 
   function handleConfirm(income: RecurringIncome) {
     setConfirming(income.id)
@@ -72,6 +82,7 @@ export function MonthlyProspect({
         </p>
 
         <div className="space-y-0">
+          {/* Entrate ricorrenti */}
           {incomes.map((income) => {
             const status = incomeStatus(income.day_of_month)
             const dim = status === 'future'
@@ -126,21 +137,42 @@ export function MonthlyProspect({
             )
           })}
 
-          {monthlyDebts.map((l) => (
-            <div key={l.id} className="flex items-center py-[11px] border-b border-border">
-              <div className="flex-1 min-w-0">
-                <span className="text-[13.5px] font-medium text-foreground tracking-[-0.1px]">{l.name}</span>
-                <p className="font-mono text-[11px] text-muted-foreground mt-0.5">rata mensile</p>
+          {/* Crediti */}
+          {credits.map((l) => {
+            const balance = liabilityBalance(l)
+            return (
+              <div key={`credit-${l.id}`} className="flex items-center py-[11px] border-b border-border">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13.5px] font-medium text-foreground tracking-[-0.1px]">{l.name}</span>
+                  <p className="font-mono text-[11px] text-muted-foreground mt-0.5">{liabilitySubLabel(l)}</p>
+                </div>
+                <span className="font-mono text-[13.5px] font-medium tabular-nums text-[var(--primary)] shrink-0">
+                  +{formatCurrency(balance, l.currency)}
+                </span>
               </div>
-              <span className="font-mono text-[13.5px] font-medium tabular-nums text-destructive shrink-0">
-                −{formatCurrency(l.monthly_payment!, l.currency)}
-              </span>
-            </div>
-          ))}
+            )
+          })}
+
+          {/* Debiti */}
+          {debts.map((l) => {
+            const hasRata = l.monthly_payment && l.monthly_payment > 0
+            const displayValue = hasRata ? l.monthly_payment! : liabilityBalance(l)
+            return (
+              <div key={`debt-${l.id}`} className="flex items-center py-[11px] border-b border-border">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13.5px] font-medium text-foreground tracking-[-0.1px]">{l.name}</span>
+                  <p className="font-mono text-[11px] text-muted-foreground mt-0.5">{liabilitySubLabel(l)}</p>
+                </div>
+                <span className="font-mono text-[13.5px] font-medium tabular-nums text-destructive shrink-0">
+                  −{formatCurrency(displayValue, l.currency)}
+                </span>
+              </div>
+            )
+          })}
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          <span className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground">Netto mese</span>
+          <span className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground">Netto</span>
           <span className={`font-mono text-[14px] font-semibold tabular-nums ${net >= 0 ? 'text-[var(--primary)]' : 'text-destructive'}`}>
             {net >= 0 ? '+' : '−'}{formatCurrency(Math.abs(net))}
           </span>

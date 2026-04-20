@@ -5,7 +5,6 @@ import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
 import { MonthlyProspect, TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
-import { AddRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
 import type { AccountWithLatestSnapshot, Position, Liability, PositionWithQuote, RecurringIncome } from '@/types'
 import { formatCurrency } from '@/lib/formats'
 import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
@@ -177,9 +176,6 @@ export default async function HomePage() {
             {/* Monthly prospect */}
             <MonthlyProspect incomes={recurringIncomes} liabilities={liabilities} accounts={accounts} />
 
-            <div className="flex justify-end">
-              <AddRecurringIncomeDialog accounts={accounts} />
-            </div>
           </div>
 
           {/* Right: asset list */}
@@ -191,7 +187,7 @@ export default async function HomePage() {
               <div className="flex items-center gap-1.5">
                 <RefreshButton />
                 <div className="hidden md:block">
-                  <AddItemSheet />
+                  <AddItemSheet accounts={accounts} />
                 </div>
               </div>
             </div>
@@ -211,7 +207,7 @@ export default async function HomePage() {
 
         </div>
       </div>
-      <MobileFab />
+      <MobileFab accounts={accounts} />
     </>
   )
 }

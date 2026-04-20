@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pencil, Trash2, Info } from 'lucide-react'
+import { Pencil, Trash2, Info, ChevronDown } from 'lucide-react'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EditAccountDialog } from './EditAccountDialog'
@@ -27,13 +27,12 @@ const SUBTYPE_LABEL: Record<LiabilitySubtype, string> = {
   informal_credit: 'Credito',
 }
 
-// Category dot colors
 const CAT_DOT = {
-  invest:  'oklch(0.82 0.18 130)',  // lime
-  cash:    'oklch(0.78 0.14 220)',  // sky
-  pension: 'oklch(0.72 0.18 300)', // violet
-  crypto:  'oklch(0.75 0.16 50)',  // amber
-  other:   'oklch(0.72 0.02 260)', // gray
+  invest:  'oklch(0.82 0.18 130)',
+  cash:    'oklch(0.78 0.14 220)',
+  pension: 'oklch(0.72 0.18 300)',
+  crypto:  'oklch(0.75 0.16 50)',
+  other:   'oklch(0.72 0.02 260)',
   debt:    '#ef4444',
   credit:  'oklch(0.82 0.18 130)',
 } as const
@@ -47,15 +46,15 @@ const ACCOUNT_TYPE_TO_CAT: Record<string, keyof typeof CAT_DOT> = {
 }
 
 type ActiveModal =
-  | { kind: 'edit-account';   data: AccountWithLatestSnapshot }
-  | { kind: 'update-value';   data: AccountWithLatestSnapshot }
-  | { kind: 'edit-live';      data: PositionWithQuote }
-  | { kind: 'edit-manual';    data: Position }
-  | { kind: 'edit-liability'; data: Liability }
-  | { kind: 'delete-account'; data: AccountWithLatestSnapshot }
-  | { kind: 'delete-live';    data: PositionWithQuote }
-  | { kind: 'delete-manual';  data: Position }
-  | { kind: 'delete-liability'; data: Liability }
+  | { kind: 'edit-account';      data: AccountWithLatestSnapshot }
+  | { kind: 'update-value';      data: AccountWithLatestSnapshot }
+  | { kind: 'edit-live';         data: PositionWithQuote }
+  | { kind: 'edit-manual';       data: Position }
+  | { kind: 'edit-liability';    data: Liability }
+  | { kind: 'delete-account';    data: AccountWithLatestSnapshot }
+  | { kind: 'delete-live';       data: PositionWithQuote }
+  | { kind: 'delete-manual';     data: Position }
+  | { kind: 'delete-liability';  data: Liability }
   | null
 
 function DeskLink({ href, children }: { href: string; children: React.ReactNode }) {
@@ -85,6 +84,43 @@ function DeskBtn({ onClick, children, danger }: { onClick: () => void; children:
   )
 }
 
+function GroupHeader({
+  label,
+  count,
+  total,
+  totalColor,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string
+  count: number
+  total: string
+  totalColor?: string
+  open: boolean
+  onToggle: () => void
+  children?: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between py-2.5 group"
+    >
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[10px] tracking-[1.5px] uppercase text-muted-foreground">{label}</span>
+        <span className="font-mono text-[10px] text-muted-foreground/50">{count}</span>
+        {children}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`font-mono text-[12px] tabular-nums font-medium ${totalColor ?? 'text-foreground/70'}`}>{total}</span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
+        />
+      </div>
+    </button>
+  )
+}
+
 export function AccountsList({
   accounts,
   positionsWithQuotes,
@@ -99,6 +135,7 @@ export function AccountsList({
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<ActiveModal>(null)
   const [debtView, setDebtView] = useState<'totale' | 'rata'>('totale')
+  const [openGroups, setOpenGroups] = useState({ conti: true, posizioni: true, liabilities: true })
 
   const hasDebtWithPayment = liabilities.some(l => l.type === 'debt' && l.monthly_payment)
 
@@ -113,28 +150,32 @@ export function AccountsList({
 
   const closeModal = () => setModal(null)
 
-  type Item =
-    | { kind: 'live-position'; data: PositionWithQuote }
-    | { kind: 'manual-position'; data: Position }
-    | { kind: 'account'; data: AccountWithLatestSnapshot }
-    | { kind: 'liability'; data: Liability }
+  function toggleGroup(key: keyof typeof openGroups) {
+    setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }))
+  }
 
-  const items: Item[] = [
-    ...positionsWithQuotes.map((p) => ({ kind: 'live-position' as const, data: p })),
-    ...manualPositions.map((p) => ({ kind: 'manual-position' as const, data: p })),
-    ...accounts.map((a) => ({ kind: 'account' as const, data: a })),
-    ...liabilities.map((l) => ({ kind: 'liability' as const, data: l })),
+  // Sorted slices
+  const sortedAccounts = [...accounts].sort((a, b) => (b.latest_value ?? 0) - (a.latest_value ?? 0))
+  const sortedPositions = [
+    ...positionsWithQuotes.map(p => ({ kind: 'live' as const, data: p })),
+    ...manualPositions.map(p => ({ kind: 'manual' as const, data: p })),
   ].sort((a, b) => {
-    const val = (item: Item) => {
-      if (item.kind === 'live-position') return item.data.value
-      if (item.kind === 'manual-position') return item.data.current_value_eur ?? 0
-      if (item.kind === 'account') return item.data.latest_value ?? 0
-      return item.data.amount
-    }
+    const val = (x: typeof a) => x.kind === 'live' ? x.data.value : (x.data.current_value_eur ?? 0)
     return val(b) - val(a)
   })
+  const sortedLiabilities = [...liabilities].sort((a, b) => liabilityBalance(b) - liabilityBalance(a))
 
-  if (items.length === 0) {
+  // Group totals
+  const contiTotal = accounts.reduce((s, a) => s + (a.latest_value ?? 0), 0)
+  const posizioniTotal = positionsWithQuotes.reduce((s, p) => s + p.value, 0)
+    + manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
+  const debtsTotal = liabilities.filter(l => l.type === 'debt').reduce((s, l) => s + liabilityBalance(l), 0)
+  const creditsTotal = liabilities.filter(l => l.type === 'credit').reduce((s, l) => s + liabilityBalance(l), 0)
+  const liabNet = creditsTotal - debtsTotal
+
+  const isEmpty = accounts.length === 0 && positionsWithQuotes.length === 0 && manualPositions.length === 0 && liabilities.length === 0
+
+  if (isEmpty) {
     return (
       <div className="text-center py-8 font-mono text-[12px] text-[#52525b] tracking-[0.4px]">
         Nessun asset ancora.
@@ -146,100 +187,17 @@ export function AccountsList({
 
   return (
     <>
-      {hasDebtWithPayment && (
-        <div className="flex justify-end px-1 pb-2">
-          <div className="flex items-center gap-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
-            {(['totale', 'rata'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setDebtView(mode)}
-                className={`px-2.5 py-1 rounded-md font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
-                  debtView === mode
-                    ? 'bg-white/[0.08] text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <div>
-        {items.map((item) => {
-
-          if (item.kind === 'live-position') {
-            const p = item.data
-            const label = p.display_name ?? p.isin ?? ''
-            const pctColor = p.changePercent !== undefined
-              ? (p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]')
-              : 'text-[#71717a]'
-            return (
-              <div key={`lp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
-                <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
-                <div className="flex-1 min-w-0 ml-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</span>
-                    <span className="font-mono text-[9px] tracking-[0.8px] uppercase text-[var(--primary)] border border-[var(--primary)] rounded-[3px] px-[5px] py-[2px] leading-none opacity-80 shrink-0">
-                      live
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
-                    {p.broker && <span>{p.broker} · </span>}
-                    <span className="font-mono">{p.isin}</span>
-                  </p>
-                </div>
-                {/* %change — colonna separata solo desktop */}
-                <div className="hidden md:block text-right shrink-0 ml-4 w-[56px]">
-                  <p className={`font-mono text-[12px] tabular-nums ${pctColor}`}>
-                    {p.changePercent !== undefined
-                      ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
-                      : '—'}
-                  </p>
-                </div>
-                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
-                  <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
-                  <DeskBtn onClick={() => setModal({ kind: 'edit-live', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
-                  <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
-                </div>
-                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.value, 'EUR')}</p>
-                  {/* %change mobile — sotto il valore */}
-                  <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
-                    {p.changePercent !== undefined
-                      ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
-                      : '—'}
-                  </p>
-                </div>
-              </div>
-            )
-          }
-
-          if (item.kind === 'manual-position') {
-            const p = item.data
-            const label = p.display_name ?? 'Asset'
-            return (
-              <div key={`mp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'manual-position', data: p })}>
-                <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
-                <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5">{p.broker || 'Manuale'}</p>
-                </div>
-                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
-                  <DeskBtn onClick={() => setModal({ kind: 'edit-manual', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
-                  <DeskBtn onClick={() => setModal({ kind: 'delete-manual', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
-                </div>
-                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.current_value_eur, 'EUR')}</p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">manuale</p>
-                </div>
-              </div>
-            )
-          }
-
-          if (item.kind === 'account') {
-            const a = item.data
+      {/* ── CONTI ── */}
+      {accounts.length > 0 && (
+        <div className="border-b border-white/[0.04]">
+          <GroupHeader
+            label="Conti"
+            count={accounts.length}
+            total={formatCurrency(contiTotal)}
+            open={openGroups.conti}
+            onToggle={() => toggleGroup('conti')}
+          />
+          {openGroups.conti && sortedAccounts.map((a) => {
             const catKey = ACCOUNT_TYPE_TO_CAT[a.type] ?? 'other'
             return (
               <div key={`acc-${a.id}`} className={rowClass} onClick={() => openSheet({ kind: 'account', data: a })}>
@@ -260,45 +218,159 @@ export function AccountsList({
                 </div>
               </div>
             )
-          }
+          })}
+        </div>
+      )}
 
-          // liability
-          const l = item.data
-          const isDebt = l.type === 'debt'
-          const balance = liabilityBalance(l)
-          const showRata = isDebt && debtView === 'rata' && !!l.monthly_payment
-          const displayValue = showRata ? l.monthly_payment! : balance
-          const displayLabel = showRata ? 'rata mensile' : isDebt ? 'debito' : 'credito'
-          return (
-            <div key={`lib-${l.id}`} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
-              <LogoAvatar
-                name={l.name}
-                catColor={isDebt ? CAT_DOT.debt : CAT_DOT.credit}
-                customImageUrl={l.image_url}
-              />
-              <div className="flex-1 min-w-0 ml-3">
-                <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
-                <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
-                  {SUBTYPE_LABEL[l.subtype]}
-                  {l.counterparty && ` · ${l.counterparty}`}
-                  {l.due_date && ` · scade ${formatDate(l.due_date)}`}
-                </p>
+      {/* ── POSIZIONI ── */}
+      {sortedPositions.length > 0 && (
+        <div className="border-b border-white/[0.04]">
+          <GroupHeader
+            label="Posizioni"
+            count={sortedPositions.length}
+            total={formatCurrency(posizioniTotal)}
+            open={openGroups.posizioni}
+            onToggle={() => toggleGroup('posizioni')}
+          />
+          {openGroups.posizioni && sortedPositions.map((item) => {
+            if (item.kind === 'live') {
+              const p = item.data
+              const label = p.display_name ?? p.isin ?? ''
+              const pctColor = p.changePercent !== undefined
+                ? (p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]')
+                : 'text-[#71717a]'
+              return (
+                <div key={`lp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
+                  <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
+                  <div className="flex-1 min-w-0 ml-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</span>
+                      <span className="font-mono text-[9px] tracking-[0.8px] uppercase text-[var(--primary)] border border-[var(--primary)] rounded-[3px] px-[5px] py-[2px] leading-none opacity-80 shrink-0">
+                        live
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                      {p.broker && <span>{p.broker} · </span>}
+                      <span className="font-mono">{p.isin}</span>
+                    </p>
+                  </div>
+                  <div className="hidden md:block text-right shrink-0 ml-4 w-[56px]">
+                    <p className={`font-mono text-[12px] tabular-nums ${pctColor}`}>
+                      {p.changePercent !== undefined
+                        ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
+                        : '—'}
+                    </p>
+                  </div>
+                  <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                    <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
+                    <DeskBtn onClick={() => setModal({ kind: 'edit-live', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
+                    <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+                  </div>
+                  <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                    <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.value, 'EUR')}</p>
+                    <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
+                      {p.changePercent !== undefined
+                        ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
+              )
+            }
+
+            const p = item.data
+            const label = p.display_name ?? 'Asset'
+            return (
+              <div key={`mp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'manual-position', data: p })}>
+                <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</p>
+                  <p className="text-[12px] text-[#71717a] mt-0.5">{p.broker || 'Manuale'}</p>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
+                  <DeskBtn onClick={() => setModal({ kind: 'edit-manual', data: p })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
+                  <DeskBtn onClick={() => setModal({ kind: 'delete-manual', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+                </div>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.current_value_eur, 'EUR')}</p>
+                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">manuale</p>
+                </div>
               </div>
-              <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                <DeskLink href={`/liability/${l.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
-                <DeskBtn onClick={() => setModal({ kind: 'edit-liability', data: l })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
-                <DeskBtn onClick={() => setModal({ kind: 'delete-liability', data: l })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── DEBITI & CREDITI ── */}
+      {liabilities.length > 0 && (
+        <div>
+          <GroupHeader
+            label="Debiti & Crediti"
+            count={liabilities.length}
+            total={`${liabNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(liabNet))}`}
+            totalColor={liabNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}
+            open={openGroups.liabilities}
+            onToggle={() => toggleGroup('liabilities')}
+          >
+            {hasDebtWithPayment && openGroups.liabilities && (
+              <div
+                className="flex items-center gap-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5 ml-2"
+                onClick={e => e.stopPropagation()}
+              >
+                {(['totale', 'rata'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={(e) => { e.stopPropagation(); setDebtView(mode) }}
+                    className={`px-2.5 py-1 rounded-md font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
+                      debtView === mode
+                        ? 'bg-white/[0.08] text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
               </div>
-              <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                <p className={`font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] ${isDebt ? 'text-[#ef4444]' : 'text-[var(--primary)]'}`}>
-                  {isDebt ? '−' : '+'}{formatCurrency(displayValue, l.currency)}
-                </p>
-                <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">{displayLabel}</p>
+            )}
+          </GroupHeader>
+          {openGroups.liabilities && sortedLiabilities.map((l) => {
+            const isDebt = l.type === 'debt'
+            const balance = liabilityBalance(l)
+            const showRata = isDebt && debtView === 'rata' && !!l.monthly_payment
+            const displayValue = showRata ? l.monthly_payment! : balance
+            const displayLabel = showRata ? 'rata mensile' : isDebt ? 'debito' : 'credito'
+            return (
+              <div key={`lib-${l.id}`} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
+                <LogoAvatar
+                  name={l.name}
+                  catColor={isDebt ? CAT_DOT.debt : CAT_DOT.credit}
+                  customImageUrl={l.image_url}
+                />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
+                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                    {SUBTYPE_LABEL[l.subtype]}
+                    {l.counterparty && ` · ${l.counterparty}`}
+                    {l.due_date && ` · scade ${formatDate(l.due_date)}`}
+                  </p>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <DeskLink href={`/liability/${l.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
+                  <DeskBtn onClick={() => setModal({ kind: 'edit-liability', data: l })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
+                  <DeskBtn onClick={() => setModal({ kind: 'delete-liability', data: l })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+                </div>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className={`font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] ${isDebt ? 'text-[#ef4444]' : 'text-[var(--primary)]'}`}>
+                    {isDebt ? '−' : '+'}{formatCurrency(displayValue, l.currency)}
+                  </p>
+                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">{displayLabel}</p>
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Mobile action sheet */}
       <ItemActionSheet
@@ -309,22 +381,22 @@ export function AccountsList({
       />
 
       {/* Controlled modals */}
-      {modal !== null && modal.kind === 'edit-account' && (
+      {modal?.kind === 'edit-account' && (
         <EditAccountDialog account={modal.data} open onOpenChange={(o) => !o && closeModal()} />
       )}
-      {modal !== null && modal.kind === 'update-value' && (
+      {modal?.kind === 'update-value' && (
         <UpdateValueDialog account={modal.data} open onOpenChange={(o) => !o && closeModal()} />
       )}
-      {modal !== null && modal.kind === 'edit-live' && (
+      {modal?.kind === 'edit-live' && (
         <EditPositionDialog position={modal.data} open onOpenChange={(o) => !o && closeModal()} />
       )}
-      {modal !== null && modal.kind === 'edit-manual' && (
+      {modal?.kind === 'edit-manual' && (
         <EditPositionDialog position={modal.data} open onOpenChange={(o) => !o && closeModal()} />
       )}
-      {modal !== null && modal.kind === 'edit-liability' && (
+      {modal?.kind === 'edit-liability' && (
         <EditLiabilityDialog liability={modal.data} open onOpenChange={(o) => !o && closeModal()} />
       )}
-      {modal !== null && modal.kind === 'delete-account' && (
+      {modal?.kind === 'delete-account' && (
         <ConfirmDialog
           title="Elimina account"
           description={`Vuoi eliminare "${modal.data.name}" e tutto il suo storico?`}
@@ -333,7 +405,7 @@ export function AccountsList({
           onConfirm={() => deleteAccount(modal.data.id)}
         />
       )}
-      {modal !== null && modal.kind === 'delete-live' && (
+      {modal?.kind === 'delete-live' && (
         <ConfirmDialog
           title="Elimina posizione"
           description={`Vuoi eliminare "${modal.data.display_name ?? modal.data.isin}"? Questa azione non può essere annullata.`}
@@ -342,7 +414,7 @@ export function AccountsList({
           onConfirm={() => deletePosition(modal.data.id)}
         />
       )}
-      {modal !== null && modal.kind === 'delete-manual' && (
+      {modal?.kind === 'delete-manual' && (
         <ConfirmDialog
           title="Elimina posizione"
           description={`Vuoi eliminare "${modal.data.display_name ?? 'Asset'}"? Questa azione non può essere annullata.`}
@@ -351,7 +423,7 @@ export function AccountsList({
           onConfirm={() => deletePosition(modal.data.id)}
         />
       )}
-      {modal !== null && modal.kind === 'delete-liability' && (
+      {modal?.kind === 'delete-liability' && (
         <ConfirmDialog
           title={`Elimina ${modal.data.type === 'debt' ? 'debito' : 'credito'}`}
           description={`Vuoi eliminare "${modal.data.name}"? Questa azione non può essere annullata.`}
