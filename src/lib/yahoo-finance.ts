@@ -73,23 +73,41 @@ export async function fetchQuotesByIsins(isins: string[]): Promise<Record<string
   ) as Record<string, Quote>
 }
 
-export async function fetchEurUsdRate(): Promise<number> {
+export interface ExchangeRates {
+  USD: number
+  GBP: number
+  CHF: number
+}
+
+async function fetchPairRate(pair: string): Promise<number | null> {
   try {
     const res = await fetch(
-      'https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X?interval=1d&range=1d',
+      `https://query1.finance.yahoo.com/v8/finance/chart/${pair}=X?interval=1d&range=1d`,
       { next: { revalidate: 300 } }
     )
-    if (!res.ok) return 1.0
+    if (!res.ok) return null
     const json = await res.json()
-    const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice
-    return price ?? 1.0
+    return json?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null
   } catch {
-    return 1.0
+    return null
   }
 }
 
-export function toEur(price: number, currency: string, eurUsdRate: number): number {
+export async function fetchExchangeRates(): Promise<ExchangeRates> {
+  const [usd, gbp, chf] = await Promise.all([
+    fetchPairRate('EURUSD'),
+    fetchPairRate('EURGBP'),
+    fetchPairRate('EURCHF'),
+  ])
+  return { USD: usd ?? 1, GBP: gbp ?? 1, CHF: chf ?? 1 }
+}
+
+export function toEur(price: number, currency: string, rates: ExchangeRates): number {
   if (currency === 'EUR') return price
-  if (currency === 'USD') return price / eurUsdRate
+  if (currency === 'USD') return price / rates.USD
+  if (currency === 'GBP') return price / rates.GBP
+  // Yahoo quota London in pence (GBp / GBX) — convert to GBP first
+  if (currency === 'GBp' || currency === 'GBX') return price / 100 / rates.GBP
+  if (currency === 'CHF') return price / rates.CHF
   return price
 }

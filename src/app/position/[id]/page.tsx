@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { BackButton } from '@/components/ui/back-button'
 import { DetailChart } from '@/components/charts/DetailChart'
 import { formatCurrency } from '@/lib/formats'
-import { fetchQuotesByIsins, fetchEurUsdRate, toEur } from '@/lib/yahoo-finance'
+import { fetchQuotesByIsins, fetchExchangeRates, toEur } from '@/lib/yahoo-finance'
 
 export default async function PositionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -24,10 +24,10 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
   let pricePerUnit: number | undefined
 
   if (!position.is_manual && position.isin) {
-    const [quotes, eurUsdRate] = await Promise.all([fetchQuotesByIsins([position.isin]), fetchEurUsdRate()])
+    const [quotes, rates] = await Promise.all([fetchQuotesByIsins([position.isin]), fetchExchangeRates()])
     const q = quotes[position.isin]
     if (q) {
-      pricePerUnit = toEur(q.price, q.currency, eurUsdRate)
+      pricePerUnit = toEur(q.price, q.currency, rates)
       currentValue = pricePerUnit * (position.units ?? 0)
       changePercent = q.changePercent
     }

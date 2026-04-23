@@ -5,19 +5,19 @@ import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import type { AccountType } from '@/types'
 import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
-import { fetchEurUsdRate } from '@/lib/yahoo-finance'
+import { fetchExchangeRates } from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import type { Slice } from '@/components/charts/AllocationChart'
 
 export default async function AnalyticsPage() {
-  const [accounts, allPositions, liabilities, eurUsdRate] = await Promise.all([
-    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchEurUsdRate(),
+  const [accounts, allPositions, liabilities, rates] = await Promise.all([
+    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchExchangeRates(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
   const manualPositions = allPositions.filter((p) => p.is_manual)
 
-  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, eurUsdRate)
+  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
 
   const { liveTotal, manualTotal } = computePortfolioTotals(
     accounts, positionsWithQuotes, manualPositions, liabilities

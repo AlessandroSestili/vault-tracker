@@ -1,20 +1,20 @@
 import { TYPE_COLORS } from '@/components/charts/AllocationChart'
 import type { AccountType } from '@/types'
-import { fetchEurUsdRate } from '@/lib/yahoo-finance'
+import { fetchExchangeRates } from '@/lib/yahoo-finance'
 import { liabilityBalance } from '@/lib/liability-calc'
 import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import type { OrbitCategory } from '@/components/charts/OrbitChart3D'
 import { OrbitChart3DClient } from '@/components/charts/OrbitChart3DClient'
 
 export default async function InsightsPage() {
-  const [accounts, allPositions, liabilities, eurUsdRate] = await Promise.all([
-    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchEurUsdRate(),
+  const [accounts, allPositions, liabilities, rates] = await Promise.all([
+    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchExchangeRates(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
   const manualPositions = allPositions.filter((p) => p.is_manual)
 
-  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, eurUsdRate)
+  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
 
   const { liveTotal, manualTotal, accountsTotal, liabNet, total } = computePortfolioTotals(
     accounts, positionsWithQuotes, manualPositions, liabilities

@@ -8,7 +8,7 @@ import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
 import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
 import { formatCurrency } from '@/lib/formats'
-import { fetchEurUsdRate } from '@/lib/yahoo-finance'
+import { fetchExchangeRates } from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 
 async function getAccountSnapshots() {
@@ -29,7 +29,7 @@ async function upsertTodayPositionSnapshots(values: { id: string; valueEur: numb
   const today = new Date().toISOString().slice(0, 10)
   await supabase.from('position_snapshots').upsert(
     values.map((v) => ({ position_id: v.id, value_eur: v.valueEur, recorded_at: today })),
-    { onConflict: 'position_id,recorded_at', ignoreDuplicates: true }
+    { onConflict: 'position_id,recorded_at' }
   )
 }
 
@@ -58,15 +58,15 @@ function computeDailyTotals(
 }
 
 export default async function HomePage() {
-  const [accounts, allPositions, liabilities, recurringIncomes, accountSnapshots, positionSnapshots, eurUsdRate] = await Promise.all([
+  const [accounts, allPositions, liabilities, recurringIncomes, accountSnapshots, positionSnapshots, rates] = await Promise.all([
     fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchRecurringIncomes(),
-    getAccountSnapshots(), getPositionSnapshots(), fetchEurUsdRate(),
+    getAccountSnapshots(), getPositionSnapshots(), fetchExchangeRates(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
   const manualPositions = allPositions.filter((p) => p.is_manual)
 
-  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, eurUsdRate)
+  const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
 
   await upsertTodayPositionSnapshots(positionsWithQuotes.map((p) => ({ id: p.id, valueEur: p.value })))
 
@@ -111,7 +111,7 @@ export default async function HomePage() {
                   </span>
                 )}
                 <span className="text-muted-foreground">
-                  EUR/USD <span className="text-foreground/60 tabular-nums">{eurUsdRate.toFixed(4)}</span>
+                  EUR/USD <span className="text-foreground/60 tabular-nums">{rates.USD.toFixed(4)}</span>
                 </span>
                 {debtsTotal > 0 && (
                   <span className="text-destructive tabular-nums">

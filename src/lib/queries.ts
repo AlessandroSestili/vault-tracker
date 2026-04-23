@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { fetchQuotesByIsins, toEur } from '@/lib/yahoo-finance'
+import { fetchQuotesByIsins, toEur, type ExchangeRates } from '@/lib/yahoo-finance'
 import { liabilityBalance } from '@/lib/liability-calc'
 import type { AccountWithLatestSnapshot, Position, Liability, RecurringIncome, PositionWithQuote } from '@/types'
 
@@ -44,7 +44,7 @@ export async function fetchRecurringIncomes(): Promise<RecurringIncome[]> {
 
 export async function mapPositionsWithQuotes(
   livePositions: Position[],
-  eurUsdRate: number
+  rates: ExchangeRates
 ): Promise<PositionWithQuote[]> {
   if (livePositions.length === 0) return []
   const isins = livePositions.map((p) => p.isin!)
@@ -53,7 +53,7 @@ export async function mapPositionsWithQuotes(
     .filter((p) => p.isin && quotes[p.isin])
     .map((p) => {
       const q = quotes[p.isin!]
-      const priceEur = toEur(q.price, q.currency, eurUsdRate)
+      const priceEur = toEur(q.price, q.currency, rates)
       return {
         ...p,
         price: priceEur,
