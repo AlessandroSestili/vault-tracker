@@ -1,6 +1,6 @@
 'use client'
 
-import { PieChart, Pie, Cell } from 'recharts'
+import { PieChart, Pie } from 'recharts'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
@@ -66,6 +66,9 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
 
   const total = slices.reduce((s, x) => s + x.value, 0)
   const maxPct = Math.max(...slices.map(s => s.pct))
+  // recharts 3.x: passare `fill` sul datum invece di usare <Cell>
+  const pieData = slices.map(s => ({ ...s, fill: s.color }))
+  const pad = slices.length > 1 ? 1.5 : 0
 
   return (
     <div className="flex flex-col md:flex-row md:items-start md:gap-10">
@@ -74,21 +77,17 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
         {/* Mobile */}
         <div className="md:hidden">
           <PieChart width={200} height={200}>
-            <Pie data={slices} cx={100} cy={100} innerRadius={72} outerRadius={93}
-              dataKey="value" startAngle={90} endAngle={-270}
-              stroke="none" paddingAngle={slices.length > 1 ? 1.5 : 0}>
-              {slices.map(s => <Cell key={s.id} fill={s.color} />)}
-            </Pie>
+            <Pie data={pieData} cx={100} cy={100} innerRadius={72} outerRadius={93}
+              dataKey="value" nameKey="label" startAngle={90} endAngle={-270}
+              stroke="none" paddingAngle={pad} isAnimationActive={false} />
           </PieChart>
         </div>
         {/* Desktop */}
         <div className="hidden md:block">
           <PieChart width={280} height={280}>
-            <Pie data={slices} cx={140} cy={140} innerRadius={103} outerRadius={131}
-              dataKey="value" startAngle={90} endAngle={-270}
-              stroke="none" paddingAngle={slices.length > 1 ? 1.5 : 0}>
-              {slices.map(s => <Cell key={s.id} fill={s.color} />)}
-            </Pie>
+            <Pie data={pieData} cx={140} cy={140} innerRadius={103} outerRadius={131}
+              dataKey="value" nameKey="label" startAngle={90} endAngle={-270}
+              stroke="none" paddingAngle={pad} isAnimationActive={false} />
           </PieChart>
         </div>
         {/* Center label */}
