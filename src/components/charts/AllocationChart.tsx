@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
@@ -123,13 +123,17 @@ function Donut3D({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rO
   const cx = size / 2
   const cy = size / 2
   const [hoverId, setHoverId] = useState<string | null>(null)
+  // useId garantisce id univoci per ogni istanza (evita collisioni tra istanza mobile+desktop).
+  const scope = useId().replace(/:/g, '')
+  const gradId = (id: string) => `grad-${scope}-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+
+  if (arcs.length === 0) return null
 
   return (
     <div
       className="relative"
       style={{ width: size, height: size, perspective: '1200px' }}
     >
-      {/* Ground shadow (soft ellipse below) */}
       <div
         aria-hidden
         className="absolute pointer-events-none"
@@ -155,26 +159,19 @@ function Donut3D({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rO
       >
         <defs>
           {arcs.map((a) => (
-            <radialGradient key={`grad-${a.id}`} id={`grad-${a.id}`} cx="50%" cy="50%" r="50%">
+            <radialGradient key={a.id} id={gradId(a.id)} cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor={lighten(a.color, 0.18)} />
               <stop offset="100%" stopColor={a.color} />
             </radialGradient>
           ))}
         </defs>
 
-        {/* Side wall — extruded copy under main face, shifted +Y, fill = darker tone */}
         <g transform={`translate(0, ${Math.round(size * 0.035)})`} opacity={0.85}>
           {arcs.map((a) => (
-            <path
-              key={`wall-${a.id}`}
-              d={a.path}
-              fill={a.color}
-              opacity={0.45}
-            />
+            <path key={a.id} d={a.path} fill={a.color} opacity={0.45} />
           ))}
         </g>
 
-        {/* Front face */}
         <g>
           {arcs.map((a) => {
             const dimmed = hoverId !== null && hoverId !== a.id
@@ -182,7 +179,7 @@ function Donut3D({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rO
               <path
                 key={a.id}
                 d={a.path}
-                fill={`url(#grad-${a.id})`}
+                fill={`url(#${gradId(a.id)})`}
                 opacity={dimmed ? 0.35 : 1}
                 style={{ transition: 'opacity 200ms ease' }}
                 onMouseEnter={() => setHoverId(a.id)}
@@ -194,24 +191,8 @@ function Donut3D({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rO
           })}
         </g>
 
-        {/* Inner ring highlight (crisp edge) */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={rInner}
-          fill="none"
-          stroke="rgba(9,9,11,0.9)"
-          strokeWidth={1.5}
-        />
-        {/* Outer ring subtle shadow */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={rOuter}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={1}
-        />
+        <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="rgba(9,9,11,0.9)" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
       </svg>
     </div>
   )
@@ -241,37 +222,33 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
   const total = slices.reduce((s, x) => s + x.value, 0)
   const maxPct = Math.max(...slices.map((s) => s.pct))
 
-  // Compute arcs once for each size
-  const mobileSize = 240
-  const desktopSize = 320
-  const mobileArcs = computeArcs(slices, mobileSize / 2, mobileSize / 2, mobileSize * 0.465, mobileSize * 0.34)
-  const desktopArcs = computeArcs(slices, desktopSize / 2, desktopSize / 2, desktopSize * 0.465, desktopSize * 0.34)
+  // Single responsive donut — evita mount doppio (mobile+desktop) che causava collisioni di ID SVG.
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const size = isDesktop ? 320 : 240
+  const rOuter = size * 0.465
+  const rInner = size * 0.34
+  const arcs = computeArcs(slices, size / 2, size / 2, rOuter, rInner)
 
   return (
     <div className="flex flex-col md:flex-row md:items-start md:gap-10">
-      {/* Donut */}
       <div
-        className="relative shrink-0 mx-auto md:mx-0"
-        style={{ width: 'min(100%, 320px)' }}
+        className="relative shrink-0 mx-auto md:mx-0 flex items-center justify-center"
+        style={{ width: size, height: size + 20 }}
       >
-        {/* Mobile */}
-        <div className="md:hidden flex items-center justify-center">
-          <div className="relative">
-            <Donut3D arcs={mobileArcs} size={mobileSize} rOuter={mobileSize * 0.465} rInner={mobileSize * 0.34} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
-              <p className="text-[18px] font-medium text-foreground tabular-nums">{formatCurrency(total)}</p>
-            </div>
-          </div>
-        </div>
-        {/* Desktop */}
-        <div className="hidden md:flex items-center justify-center">
-          <div className="relative">
-            <Donut3D arcs={desktopArcs} size={desktopSize} rOuter={desktopSize * 0.465} rInner={desktopSize * 0.34} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
-              <p className="text-[20px] font-medium text-foreground tabular-nums">{formatCurrency(total)}</p>
-            </div>
+        <div className="relative">
+          <Donut3D arcs={arcs} size={size} rOuter={rOuter} rInner={rInner} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
+            <p className={`${isDesktop ? 'text-[20px]' : 'text-[18px]'} font-medium text-foreground tabular-nums`}>
+              {formatCurrency(total)}
+            </p>
           </div>
         </div>
       </div>
