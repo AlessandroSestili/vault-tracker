@@ -3,7 +3,17 @@ import { notFound } from 'next/navigation'
 import { BackButton } from '@/components/ui/back-button'
 import { DetailChart } from '@/components/charts/DetailChart'
 import { formatCurrency } from '@/lib/formats'
-import { fetchQuotesByIsins, fetchExchangeRates, toEur } from '@/lib/yahoo-finance'
+import {
+  fetchQuotesByIsins,
+  fetchExchangeRates,
+  fetchExchangeRatesHistory,
+  fetchYahooHistory,
+  searchTicker,
+  toEur,
+  toEurOnDate,
+  COMMODITY_MAP,
+  TROY_OZ_TO_G,
+} from '@/lib/yahoo-finance'
 
 export default async function PositionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,19 +27,39 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
   if (!position) notFound()
 
   const snaps = posSnapshots ?? []
-  const chartData = snaps.map(s => ({ date: s.recorded_at.slice(0, 10), value: s.value_eur }))
+  const vaultData = snaps.map(s => ({ date: s.recorded_at.slice(0, 10), value: s.value_eur }))
 
   let currentValue = position.current_value_eur ?? snaps[snaps.length - 1]?.value_eur ?? 0
   let changePercent: number | undefined
   let pricePerUnit: number | undefined
+  let yahooData: { date: string; value: number }[] | undefined
 
   if (!position.is_manual && position.isin) {
-    const [quotes, rates] = await Promise.all([fetchQuotesByIsins([position.isin]), fetchExchangeRates()])
+    const [quotes, rates, fxHistory, ticker] = await Promise.all([
+      fetchQuotesByIsins([position.isin]),
+      fetchExchangeRates(),
+      fetchExchangeRatesHistory('1y'),
+      searchTicker(position.isin),
+    ])
     const q = quotes[position.isin]
     if (q) {
       pricePerUnit = toEur(q.price, q.currency, rates)
       currentValue = pricePerUnit * (position.units ?? 0)
       changePercent = q.changePercent
+    }
+    if (ticker) {
+      const series = await fetchYahooHistory(ticker, '1y')
+      if (series && series.points.length > 0) {
+        const commodity = COMMODITY_MAP[position.isin]
+        const units = position.units ?? 0
+        yahooData = series.points
+          .map((p) => {
+            const rawPrice = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+            const priceEur = toEurOnDate(rawPrice, series.currency, p.date, fxHistory, rates)
+            return { date: p.date, value: priceEur * units }
+          })
+          .filter((p) => Number.isFinite(p.value) && p.value > 0)
+      }
     }
   }
 
@@ -38,6 +68,7 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
   const changePct = first > 0 ? (change / first) * 100 : 0
   const isPositive = change >= 0
   const label = position.display_name ?? position.isin ?? 'Posizione'
+  const vaultStart = snaps[0]?.recorded_at?.slice(0, 10) ?? null
 
   const rows: { label: string; value: string }[] = []
   if (position.units !== null) rows.push({ label: 'Quantità', value: String(position.units) })
@@ -45,6 +76,8 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
   if (position.isin) rows.push({ label: 'ISIN', value: position.isin })
   if (position.broker) rows.push({ label: 'Broker', value: position.broker })
   rows.push({ label: 'Tipo', value: position.is_manual ? 'Manuale' : 'Live' })
+
+  const hasChart = vaultData.length >= 2 || (yahooData && yahooData.length >= 2)
 
   return (
     <div className="max-w-lg mx-auto px-5 md:px-8 py-6 pb-bottom-nav md:pb-10 space-y-6">
@@ -74,9 +107,9 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         )}
       </div>
 
-      {chartData.length >= 2 && (
+      {hasChart && (
         <div className="rounded-2xl bg-card border border-border p-4">
-          <DetailChart data={chartData} />
+          <DetailChart data={vaultData} yahoo={yahooData} vaultStart={vaultStart} />
         </div>
       )}
 

@@ -10,6 +10,7 @@ import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
 import { formatCurrency } from '@/lib/formats'
 import { fetchExchangeRates } from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
+import { backfillMissingHistory } from '@/lib/backfill'
 
 async function getAccountSnapshots() {
   const supabase = await createClient()
@@ -33,34 +34,44 @@ async function upsertTodayPositionSnapshots(values: { id: string; valueEur: numb
   )
 }
 
+export type DailyTotal = { day: string; total: number; accounts: number; positions: number }
+
 function computeDailyTotals(
   accountSnapshots: { account_id: string; value: number; recorded_at: string }[],
-  positionSnapshots: { position_id: string; value_eur: number; recorded_at: string }[]
-) {
-  const latestPerItem: Record<string, number> = {}
-  const byDay: Record<string, Record<string, number>> = {}
+  positionSnapshots: { position_id: string; value_eur: number; recorded_at: string }[],
+  liabNet: number
+): DailyTotal[] {
+  const latestAccounts: Record<string, number> = {}
+  const latestPositions: Record<string, number> = {}
+  const byDay: Record<string, { accounts: Record<string, number>; positions: Record<string, number> }> = {}
 
   for (const s of accountSnapshots) {
     const day = s.recorded_at.slice(0, 10)
-    if (!byDay[day]) byDay[day] = {}
-    byDay[day][`a_${s.account_id}`] = s.value
+    if (!byDay[day]) byDay[day] = { accounts: {}, positions: {} }
+    byDay[day].accounts[s.account_id] = s.value
   }
   for (const s of positionSnapshots) {
     const day = s.recorded_at.slice(0, 10)
-    if (!byDay[day]) byDay[day] = {}
-    byDay[day][`p_${s.position_id}`] = s.value_eur
+    if (!byDay[day]) byDay[day] = { accounts: {}, positions: {} }
+    byDay[day].positions[s.position_id] = s.value_eur
   }
 
   return Object.keys(byDay).sort().map((day) => {
-    Object.assign(latestPerItem, byDay[day])
-    return { day, total: Object.values(latestPerItem).reduce((a, b) => a + b, 0) }
+    Object.assign(latestAccounts, byDay[day].accounts)
+    Object.assign(latestPositions, byDay[day].positions)
+    const accounts = Object.values(latestAccounts).reduce((a, b) => a + b, 0)
+    const positions = Object.values(latestPositions).reduce((a, b) => a + b, 0)
+    return { day, total: accounts + positions + liabNet, accounts, positions }
   })
 }
 
 export default async function HomePage() {
-  const [accounts, allPositions, liabilities, recurringIncomes, accountSnapshots, positionSnapshots, rates] = await Promise.all([
-    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchRecurringIncomes(),
-    getAccountSnapshots(), getPositionSnapshots(), fetchExchangeRates(),
+  const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
+
+  const [accounts, liabilities, recurringIncomes, accountSnapshots, positionSnapshots] = await Promise.all([
+    fetchAccounts(), fetchLiabilities(), fetchRecurringIncomes(),
+    getAccountSnapshots(),
+    backfillMissingHistory(allPositions, rates).then(() => getPositionSnapshots()),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
@@ -77,7 +88,8 @@ export default async function HomePage() {
   const allPosSnaps = Object.values(Object.fromEntries(
     [...positionSnapshots, ...todayPosSnaps].map((s) => [`${s.position_id}_${s.recorded_at.slice(0, 10)}`, s])
   ))
-  const chartData = computeDailyTotals(accountSnapshots, allPosSnaps)
+  const chartData = computeDailyTotals(accountSnapshots, allPosSnaps, liabNet)
+  const vaultStart = accountSnapshots[0]?.recorded_at?.slice(0, 10) ?? null
 
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 
@@ -126,7 +138,7 @@ export default async function HomePage() {
 
             {/* Chart */}
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
-              <PortfolioChart data={chartData} />
+              <PortfolioChart data={chartData} vaultStart={vaultStart} />
             </div>
 
 

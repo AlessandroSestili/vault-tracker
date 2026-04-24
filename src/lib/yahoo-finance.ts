@@ -8,9 +8,9 @@ export interface Quote {
   change: number | undefined
 }
 
-const TROY_OZ_TO_G = 31.1035
+export const TROY_OZ_TO_G = 31.1035
 
-const COMMODITY_MAP: Record<string, { ticker: string; name: string; pricePerG: boolean }> = {
+export const COMMODITY_MAP: Record<string, { ticker: string; name: string; pricePerG: boolean }> = {
   // Spot prices (usati come codice custom, non sono ISIN reali)
   XAU: { ticker: 'GC=F', name: 'Oro (spot)', pricePerG: true },
   XAG: { ticker: 'SI=F', name: 'Argento (spot)', pricePerG: true },
@@ -24,11 +24,11 @@ const COMMODITY_MAP: Record<string, { ticker: string; name: string; pricePerG: b
   IE00B4NCWG09: { ticker: 'PHAG.L',  name: 'WisdomTree Physical Silver ETC', pricePerG: true },
 }
 
-async function searchTicker(isin: string): Promise<string | null> {
+export async function searchTicker(isin: string): Promise<string | null> {
   if (COMMODITY_MAP[isin]) return COMMODITY_MAP[isin].ticker
   const res = await fetch(
     `https://query1.finance.yahoo.com/v1/finance/search?q=${isin}&quotesCount=1&newsCount=0`,
-    { next: { revalidate: 300 } }
+    { next: { revalidate: 3600 } }
   )
   if (!res.ok) return null
   const json = await res.json()
@@ -109,5 +109,80 @@ export function toEur(price: number, currency: string, rates: ExchangeRates): nu
   // Yahoo quota London in pence (GBp / GBX) — convert to GBP first
   if (currency === 'GBp' || currency === 'GBX') return price / 100 / rates.GBP
   if (currency === 'CHF') return price / rates.CHF
+  return price
+}
+
+// ─── Historical data (backfill) ──────────────────────────────────────────────
+
+export interface HistoricalPoint {
+  date: string // YYYY-MM-DD
+  price: number
+}
+
+export interface HistoricalSeries {
+  currency: string
+  points: HistoricalPoint[]
+}
+
+export interface HistoricalRates {
+  USD: Map<string, number>
+  GBP: Map<string, number>
+  CHF: Map<string, number>
+}
+
+export async function fetchYahooHistory(
+  ticker: string,
+  range: string = '1y'
+): Promise<HistoricalSeries | null> {
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=${range}`,
+      { next: { revalidate: 3600 } }
+    )
+    if (!res.ok) return null
+    const json = await res.json()
+    const result = json?.chart?.result?.[0]
+    if (!result) return null
+    const timestamps: number[] = result.timestamp ?? []
+    const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? []
+    const points: HistoricalPoint[] = []
+    for (let i = 0; i < timestamps.length; i++) {
+      const price = closes[i]
+      if (price == null) continue
+      const date = new Date(timestamps[i] * 1000).toISOString().slice(0, 10)
+      points.push({ date, price })
+    }
+    return { currency: result.meta?.currency ?? 'EUR', points }
+  } catch {
+    return null
+  }
+}
+
+export async function fetchExchangeRatesHistory(range: string = '1y'): Promise<HistoricalRates> {
+  const [usd, gbp, chf] = await Promise.all([
+    fetchYahooHistory('EURUSD=X', range),
+    fetchYahooHistory('EURGBP=X', range),
+    fetchYahooHistory('EURCHF=X', range),
+  ])
+  return {
+    USD: new Map(usd?.points.map((p) => [p.date, p.price]) ?? []),
+    GBP: new Map(gbp?.points.map((p) => [p.date, p.price]) ?? []),
+    CHF: new Map(chf?.points.map((p) => [p.date, p.price]) ?? []),
+  }
+}
+
+export function toEurOnDate(
+  price: number,
+  currency: string,
+  date: string,
+  history: HistoricalRates,
+  fallback: ExchangeRates
+): number {
+  if (currency === 'EUR') return price
+  const pick = (c: 'USD' | 'GBP' | 'CHF') => history[c].get(date) ?? fallback[c]
+  if (currency === 'USD') return price / pick('USD')
+  if (currency === 'GBP') return price / pick('GBP')
+  if (currency === 'GBp' || currency === 'GBX') return price / 100 / pick('GBP')
+  if (currency === 'CHF') return price / pick('CHF')
   return price
 }
