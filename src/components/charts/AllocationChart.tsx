@@ -23,25 +23,25 @@ const TYPE_COLORS: Record<AccountType, string> = {
   other:      '#a1a1aa',
 }
 
-// Rainbow palette — 16 colori vibranti ad alta distinguibilità su sfondo dark.
-// Ordinata per salto di hue ~22° per massimizzare il contrasto tra slice adiacenti.
+// Palette editorial bright — Tailwind 400 scale per coerenza cromatica con il resto della UI
+// (lime primary, sky/amber per info, ecc). 16 hue con salto ~22° per contrasto massimo tra slice adiacenti.
 const RAINBOW: string[] = [
-  '#bef264', // lime
-  '#38bdf8', // sky
-  '#fb923c', // orange
-  '#a78bfa', // violet
-  '#f472b6', // pink
-  '#4ade80', // green
-  '#facc15', // yellow
-  '#60a5fa', // blue
-  '#f87171', // red
-  '#2dd4bf', // teal
-  '#c084fc', // purple
-  '#fcd34d', // amber
-  '#22d3ee', // cyan
-  '#e879f9', // fuchsia
-  '#fca5a5', // rose
-  '#818cf8', // indigo
+  '#bef264', // lime-300 (signature primary)
+  '#38bdf8', // sky-400
+  '#fbbf24', // amber-400
+  '#a78bfa', // violet-400
+  '#f472b6', // pink-400
+  '#4ade80', // green-400
+  '#fb923c', // orange-400
+  '#60a5fa', // blue-400
+  '#f87171', // red-400
+  '#2dd4bf', // teal-400
+  '#e879f9', // fuchsia-400
+  '#facc15', // yellow-400
+  '#22d3ee', // cyan-400
+  '#c084fc', // purple-400
+  '#fb7185', // rose-400
+  '#a3e635', // lime-400
 ]
 
 export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
@@ -75,7 +75,8 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
         <div className="md:hidden">
           <PieChart width={200} height={200}>
             <Pie data={slices} cx={100} cy={100} innerRadius={72} outerRadius={93}
-              dataKey="value" startAngle={90} endAngle={-270} stroke="#09090b" strokeWidth={1.5}>
+              dataKey="value" startAngle={90} endAngle={-270}
+              stroke="none" paddingAngle={slices.length > 1 ? 1.5 : 0}>
               {slices.map(s => <Cell key={s.id} fill={s.color} />)}
             </Pie>
           </PieChart>
@@ -84,7 +85,8 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
         <div className="hidden md:block">
           <PieChart width={280} height={280}>
             <Pie data={slices} cx={140} cy={140} innerRadius={103} outerRadius={131}
-              dataKey="value" startAngle={90} endAngle={-270} stroke="#09090b" strokeWidth={1.5}>
+              dataKey="value" startAngle={90} endAngle={-270}
+              stroke="none" paddingAngle={slices.length > 1 ? 1.5 : 0}>
               {slices.map(s => <Cell key={s.id} fill={s.color} />)}
             </Pie>
           </PieChart>
