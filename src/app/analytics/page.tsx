@@ -1,4 +1,4 @@
-import { AllocationChart, TYPE_COLORS, TYPE_PALETTES } from '@/components/charts/AllocationChart'
+import { AllocationChart, RAINBOW } from '@/components/charts/AllocationChart'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
@@ -50,36 +50,17 @@ export default async function AnalyticsPage() {
 
   const sliceTotal = raw.reduce((s, x) => s + x.value, 0)
 
-  // Color assignment: rank assets within each type by value desc → pick palette shade by rank.
-  // Ensures largest asset of each type gets the signature color; smaller ones get variations.
-  const rankByType: Record<string, number> = {}
+  // Sort by value desc so dominant slices get most saturated colors first.
   const sorted = [...raw].sort((a, b) => b.value - a.value)
 
-  // First pass: pre-rank per type by value desc
-  const perTypeRanked: Record<string, string[]> = {}
-  for (const asset of sorted) {
-    if (!perTypeRanked[asset.type]) perTypeRanked[asset.type] = []
-    perTypeRanked[asset.type].push(asset.id)
-  }
-
-  const slices: Slice[] = sorted.map((asset) => {
-    const palette = TYPE_PALETTES[asset.type] ?? [TYPE_COLORS[asset.type] ?? '#a1a1aa']
-    const rankInType = perTypeRanked[asset.type].indexOf(asset.id)
-    const colorIdx = Math.min(2 + rankInType, palette.length - 1)
-    // Start da idx 2 (colore "signature") poi va verso scuri; se solo 1 asset prende il signature
-    const color = perTypeRanked[asset.type].length === 1
-      ? (TYPE_COLORS[asset.type] ?? '#a1a1aa')
-      : palette[colorIdx % palette.length]
-    rankByType[asset.type] = (rankByType[asset.type] ?? 0) + 1
-    return {
-      id: asset.id,
-      type: asset.type,
-      label: asset.label,
-      value: asset.value,
-      color,
-      pct: sliceTotal > 0 ? (asset.value / sliceTotal) * 100 : 0,
-    }
-  })
+  const slices: Slice[] = sorted.map((asset, i) => ({
+    id: asset.id,
+    type: asset.type,
+    label: asset.label,
+    value: asset.value,
+    color: RAINBOW[i % RAINBOW.length],
+    pct: sliceTotal > 0 ? (asset.value / sliceTotal) * 100 : 0,
+  }))
 
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 

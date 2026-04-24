@@ -107,7 +107,11 @@ export function DetailChart({
     filtered.some((d) => d.date >= vaultStart) &&
     filtered.some((d) => d.date < vaultStart)
 
-  const deltaSeries = vaultPoints.length > 1 ? vaultPoints.map((d) => d.vault) : yahooPoints.map((d) => d.yahoo)
+  // Delta period-aware: uso vault se il primo punto filtrato ha vault (periodo post-vault),
+  // altrimenti Yahoo (periodo che si estende pre-vault).
+  const firstHasVault = filtered[0]?.vault != null
+  const useVault = firstHasVault && vaultPoints.length > 1
+  const deltaSeries = useVault ? vaultPoints.map((d) => d.vault) : yahooPoints.map((d) => d.yahoo)
   const deltaFirst = deltaSeries[0] ?? 0
   const deltaLast = deltaSeries[deltaSeries.length - 1] ?? 0
   const delta = deltaLast - deltaFirst
@@ -129,7 +133,7 @@ export function DetailChart({
             {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
           </span>
           <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
-            · {PERIOD_LABEL[period]}{vaultPoints.length < 2 ? ' · Yahoo' : ''}
+            · {PERIOD_LABEL[period]}{useVault ? '' : ' · Yahoo'}
           </span>
         </div>
       )}

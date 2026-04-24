@@ -73,9 +73,20 @@ export function PortfolioChart({ data, vaultStart }: { data: DataPoint[]; vaultS
   const postVault = filtered.filter((d) => d.total != null) as Array<EnrichedPoint & { total: number; accounts: number }>
   const hasTotal = postVault.length > 0
 
-  const delta = hasTotal && postVault.length > 1 ? postVault[postVault.length - 1].total - postVault[0].total : 0
-  const deltaPct = hasTotal && postVault.length > 1 && postVault[0].total !== 0 ? (delta / postVault[0].total) * 100 : 0
+  // Delta period-aware: se il primo punto del periodo filtrato è pre-vault usiamo positions
+  // (copre tutto il range grazie al backfill Yahoo 1y), altrimenti total.
+  const firstIsPrevault = hasData && filtered[0].total == null
+  const deltaSeries: number[] = !hasData
+    ? []
+    : firstIsPrevault
+      ? filtered.map((d) => d.positions)
+      : postVault.map((d) => d.total)
+  const deltaFirst = deltaSeries[0] ?? 0
+  const deltaLast = deltaSeries[deltaSeries.length - 1] ?? 0
+  const delta = deltaSeries.length > 1 ? deltaLast - deltaFirst : 0
+  const deltaPct = deltaSeries.length > 1 && deltaFirst !== 0 ? (delta / deltaFirst) * 100 : 0
   const positive = delta >= 0
+  const showPositionsLabel = firstIsPrevault && deltaSeries.length > 1
 
   const ath = hasTotal ? Math.max(...postVault.map((d) => d.total)) : null
   const entryValue = hasTotal ? postVault[0].total : null
@@ -89,8 +100,8 @@ export function PortfolioChart({ data, vaultStart }: { data: DataPoint[]; vaultS
 
   return (
     <div>
-      {hasTotal && postVault.length > 1 && (
-        <div className="flex items-center gap-2 mb-3 px-1">
+      {deltaSeries.length > 1 && (
+        <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
           <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0 }}>
             {positive
               ? <path d="M1 7l4-4 4 4" stroke={totalColor} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -103,7 +114,7 @@ export function PortfolioChart({ data, vaultStart }: { data: DataPoint[]; vaultS
             {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
           </span>
           <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
-            · {PERIOD_LABEL[period]}
+            · {PERIOD_LABEL[period]}{showPositionsLabel ? ' · posizioni' : ''}
           </span>
         </div>
       )}

@@ -23,14 +23,26 @@ const TYPE_COLORS: Record<AccountType, string> = {
   other:      '#a1a1aa',
 }
 
-// Shade palettes per famiglia cromatica (chiaro → scuro) per differenziare asset dello stesso tipo
-const TYPE_PALETTES: Record<AccountType, string[]> = {
-  investment: ['#ecfccb', '#d9f99d', '#bef264', '#a3e635', '#84cc16', '#65a30d', '#4d7c0f', '#3f6212'],
-  cash:       ['#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#075985'],
-  pension:    ['#ddd6fe', '#c4b5fd', '#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6'],
-  crypto:     ['#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412'],
-  other:      ['#d4d4d8', '#a1a1aa', '#71717a', '#52525b', '#3f3f46', '#27272a'],
-}
+// Rainbow palette — 16 colori vibranti ad alta distinguibilità su sfondo dark.
+// Ordinata per salto di hue ~22° per massimizzare il contrasto tra slice adiacenti.
+const RAINBOW: string[] = [
+  '#bef264', // lime
+  '#38bdf8', // sky
+  '#fb923c', // orange
+  '#a78bfa', // violet
+  '#f472b6', // pink
+  '#4ade80', // green
+  '#facc15', // yellow
+  '#60a5fa', // blue
+  '#f87171', // red
+  '#2dd4bf', // teal
+  '#c084fc', // purple
+  '#fcd34d', // amber
+  '#22d3ee', // cyan
+  '#e879f9', // fuchsia
+  '#fca5a5', // rose
+  '#818cf8', // indigo
+]
 
 export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
   const { showAccounts, showPositions } = useVisibility()
@@ -124,5 +136,5 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
 }
 
 
-export { TYPE_COLORS, TYPE_PALETTES }
+export { TYPE_COLORS, RAINBOW }
 export type { Slice }
