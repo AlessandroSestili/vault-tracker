@@ -21,8 +21,12 @@ const PERIODS: Period[] = ['1S', '1M', '3M', '1A', 'Tutto']
 const PERIOD_DAYS: Record<Period, number> = {
   '1S': 7, '1M': 30, '3M': 90, '1A': 365, 'Tutto': Infinity,
 }
+const PERIOD_LABEL: Record<Period, string> = {
+  '1S': 'ultimi 7g', '1M': 'ultimo mese', '3M': 'ultimi 3 mesi', '1A': 'ultimo anno', 'Tutto': 'storico',
+}
 
 const YAHOO_COLOR = 'oklch(0.72 0.08 230)'
+const RED = '#ef4444'
 
 function mergeSeries(vault: Point[], yahoo: Point[]): MergedPoint[] {
   const byDate = new Map<string, MergedPoint>()
@@ -103,8 +107,32 @@ export function DetailChart({
     filtered.some((d) => d.date >= vaultStart) &&
     filtered.some((d) => d.date < vaultStart)
 
+  const deltaSeries = vaultPoints.length > 1 ? vaultPoints.map((d) => d.vault) : yahooPoints.map((d) => d.yahoo)
+  const deltaFirst = deltaSeries[0] ?? 0
+  const deltaLast = deltaSeries[deltaSeries.length - 1] ?? 0
+  const delta = deltaLast - deltaFirst
+  const deltaPct = deltaFirst !== 0 ? (delta / deltaFirst) * 100 : 0
+  const positive = delta >= 0
+  const deltaColor = positive ? color : RED
+  const showDelta = overlay && deltaSeries.length > 1
+
   return (
     <div className="flex flex-col gap-4">
+      {showDelta && (
+        <div className="flex items-center gap-2 px-1">
+          <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0 }}>
+            {positive
+              ? <path d="M1 7l4-4 4 4" stroke={deltaColor} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              : <path d="M1 3l4 4 4-4" stroke={deltaColor} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+          </svg>
+          <span className="font-mono text-[12.5px] tabular-nums tracking-[-0.2px]" style={{ color: deltaColor }}>
+            {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
+          </span>
+          <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
+            · {PERIOD_LABEL[period]}{vaultPoints.length < 2 ? ' · Yahoo' : ''}
+          </span>
+        </div>
+      )}
       <div className={overlay ? 'h-[180px] md:h-[220px] w-full' : 'h-[160px] w-full'}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart

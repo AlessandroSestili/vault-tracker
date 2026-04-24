@@ -24,6 +24,9 @@ const PERIODS: Period[] = ['1S', '1M', '3M', '1A', 'Tutto']
 const PERIOD_DAYS: Record<Period, number> = {
   '1S': 7, '1M': 30, '3M': 90, '1A': 365, 'Tutto': Infinity,
 }
+const PERIOD_LABEL: Record<Period, string> = {
+  '1S': 'ultimi 7g', '1M': 'ultimo mese', '3M': 'ultimi 3 mesi', '1A': 'ultimo anno', 'Tutto': 'storico',
+}
 
 const LIME = 'oklch(0.82 0.18 130)'
 const RED = '#ef4444'
@@ -98,6 +101,9 @@ export function PortfolioChart({ data, vaultStart }: { data: DataPoint[]; vaultS
             style={{ color: totalColor }}
           >
             {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
+          </span>
+          <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
+            · {PERIOD_LABEL[period]}
           </span>
         </div>
       )}

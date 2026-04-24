@@ -1,10 +1,9 @@
-import { AllocationChart, TYPE_COLORS } from '@/components/charts/AllocationChart'
+import { AllocationChart, TYPE_COLORS, TYPE_PALETTES } from '@/components/charts/AllocationChart'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import type { AccountType } from '@/types'
-import { ACCOUNT_TYPE_CONFIG } from '@/lib/account-config'
 import { fetchExchangeRates } from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import type { Slice } from '@/components/charts/AllocationChart'
@@ -23,24 +22,64 @@ export default async function AnalyticsPage() {
     accounts, positionsWithQuotes, manualPositions, liabilities
   )
 
-  const grouped: Partial<Record<AccountType | 'liability', number>> = {}
-  if (liveTotal + manualTotal > 0) grouped['investment'] = liveTotal + manualTotal
+  // Build one slice per individual asset (not grouped by type) for richer colors.
+  type RawAsset = { id: string; type: AccountType; label: string; value: number }
+  const raw: RawAsset[] = []
+
   for (const a of accounts) {
-    if (a.latest_value) grouped[a.type] = (grouped[a.type] ?? 0) + a.latest_value
+    const v = a.latest_value ?? 0
+    if (v > 0) raw.push({ id: `a-${a.id}`, type: a.type as AccountType, label: a.name, value: v })
+  }
+  for (const p of positionsWithQuotes) {
+    if (p.value > 0) raw.push({
+      id: `p-${p.id}`,
+      type: 'investment',
+      label: p.display_name ?? p.isin ?? 'Posizione',
+      value: p.value,
+    })
+  }
+  for (const p of manualPositions) {
+    const v = p.current_value_eur ?? 0
+    if (v > 0) raw.push({
+      id: `m-${p.id}`,
+      type: 'investment',
+      label: p.display_name ?? 'Asset',
+      value: v,
+    })
   }
 
-  const sliceTotal = Object.values(grouped).filter(v => v > 0).reduce((s, v) => s + v, 0)
+  const sliceTotal = raw.reduce((s, x) => s + x.value, 0)
 
-  const slices: Slice[] = (Object.entries(grouped) as [AccountType, number][])
-    .filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1])
-    .map(([type, value]) => ({
-      type,
-      label: ACCOUNT_TYPE_CONFIG[type]?.label ?? type,
-      value,
-      color: TYPE_COLORS[type] ?? '#a1a1aa',
-      pct: sliceTotal > 0 ? (value / sliceTotal) * 100 : 0,
-    }))
+  // Color assignment: rank assets within each type by value desc → pick palette shade by rank.
+  // Ensures largest asset of each type gets the signature color; smaller ones get variations.
+  const rankByType: Record<string, number> = {}
+  const sorted = [...raw].sort((a, b) => b.value - a.value)
+
+  // First pass: pre-rank per type by value desc
+  const perTypeRanked: Record<string, string[]> = {}
+  for (const asset of sorted) {
+    if (!perTypeRanked[asset.type]) perTypeRanked[asset.type] = []
+    perTypeRanked[asset.type].push(asset.id)
+  }
+
+  const slices: Slice[] = sorted.map((asset) => {
+    const palette = TYPE_PALETTES[asset.type] ?? [TYPE_COLORS[asset.type] ?? '#a1a1aa']
+    const rankInType = perTypeRanked[asset.type].indexOf(asset.id)
+    const colorIdx = Math.min(2 + rankInType, palette.length - 1)
+    // Start da idx 2 (colore "signature") poi va verso scuri; se solo 1 asset prende il signature
+    const color = perTypeRanked[asset.type].length === 1
+      ? (TYPE_COLORS[asset.type] ?? '#a1a1aa')
+      : palette[colorIdx % palette.length]
+    rankByType[asset.type] = (rankByType[asset.type] ?? 0) + 1
+    return {
+      id: asset.id,
+      type: asset.type,
+      label: asset.label,
+      value: asset.value,
+      color,
+      pct: sliceTotal > 0 ? (asset.value / sliceTotal) * 100 : 0,
+    }
+  })
 
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 
