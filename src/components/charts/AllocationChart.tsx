@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useId } from 'react'
 import { formatCurrency } from '@/lib/formats'
 import type { AccountType } from '@/types'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { useVisibility } from '@/components/accounts/VisibilityContext'
+import { TYPE_COLORS, RAINBOW } from '@/lib/chart-palette'
 
 type Slice = {
   id: string
@@ -14,34 +14,6 @@ type Slice = {
   color: string
   pct: number
 }
-
-const TYPE_COLORS: Record<AccountType, string> = {
-  investment: '#bef264',
-  cash:       '#38bdf8',
-  pension:    '#a78bfa',
-  crypto:     '#fb923c',
-  other:      '#a1a1aa',
-}
-
-// Palette editorial bright — Tailwind 400 scale. 16 hue con salto ~22° per contrasto tra slice adiacenti.
-const RAINBOW: string[] = [
-  '#bef264', // lime-300 (signature primary)
-  '#38bdf8', // sky-400
-  '#fbbf24', // amber-400
-  '#a78bfa', // violet-400
-  '#f472b6', // pink-400
-  '#4ade80', // green-400
-  '#fb923c', // orange-400
-  '#60a5fa', // blue-400
-  '#f87171', // red-400
-  '#2dd4bf', // teal-400
-  '#e879f9', // fuchsia-400
-  '#facc15', // yellow-400
-  '#22d3ee', // cyan-400
-  '#c084fc', // purple-400
-  '#fb7185', // rose-400
-  '#a3e635', // lime-400
-]
 
 // ─── SVG donut primitives ─────────────────────────────────────────────
 function polarToCart(cx: number, cy: number, r: number, angleDeg: number) {
@@ -108,93 +80,21 @@ function computeArcs(slices: Slice[], cx: number, cy: number, rOuter: number, rI
   })
 }
 
-// Lightens a hex color by mixing with white (0–1 amount)
-function lighten(hex: string, amount: number): string {
-  const m = hex.replace('#', '')
-  const r = parseInt(m.slice(0, 2), 16)
-  const g = parseInt(m.slice(2, 4), 16)
-  const b = parseInt(m.slice(4, 6), 16)
-  const mix = (c: number) => Math.round(c + (255 - c) * amount)
-  const toHex = (c: number) => c.toString(16).padStart(2, '0')
-  return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`
-}
-
-function Donut3D({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rOuter: number; rInner: number }) {
+function Donut({ arcs, size, rOuter, rInner }: { arcs: Arc[]; size: number; rOuter: number; rInner: number }) {
+  if (arcs.length === 0) return null
   const cx = size / 2
   const cy = size / 2
-  const [hoverId, setHoverId] = useState<string | null>(null)
-  // useId garantisce id univoci per ogni istanza (evita collisioni tra istanza mobile+desktop).
-  const scope = useId().replace(/:/g, '')
-  const gradId = (id: string) => `grad-${scope}-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`
-
-  if (arcs.length === 0) return null
 
   return (
-    <div
-      className="relative"
-      style={{ width: size, height: size, perspective: '1200px' }}
-    >
-      <div
-        aria-hidden
-        className="absolute pointer-events-none"
-        style={{
-          left: size * 0.1,
-          right: size * 0.1,
-          bottom: size * 0.02,
-          height: size * 0.14,
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 50%, transparent 75%)',
-          filter: 'blur(8px)',
-        }}
-      />
-
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        style={{
-          transform: 'rotateX(58deg)',
-          transformOrigin: '50% 50%',
-          filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.35))',
-        }}
-      >
-        <defs>
-          {arcs.map((a) => (
-            <radialGradient key={a.id} id={gradId(a.id)} cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={lighten(a.color, 0.18)} />
-              <stop offset="100%" stopColor={a.color} />
-            </radialGradient>
-          ))}
-        </defs>
-
-        <g transform={`translate(0, ${Math.round(size * 0.035)})`} opacity={0.85}>
-          {arcs.map((a) => (
-            <path key={a.id} d={a.path} fill={a.color} opacity={0.45} />
-          ))}
-        </g>
-
-        <g>
-          {arcs.map((a) => {
-            const dimmed = hoverId !== null && hoverId !== a.id
-            return (
-              <path
-                key={a.id}
-                d={a.path}
-                fill={`url(#${gradId(a.id)})`}
-                opacity={dimmed ? 0.35 : 1}
-                style={{ transition: 'opacity 200ms ease' }}
-                onMouseEnter={() => setHoverId(a.id)}
-                onMouseLeave={() => setHoverId(null)}
-              >
-                <title>{`${a.label} — ${formatCurrency(a.value)}`}</title>
-              </path>
-            )
-          })}
-        </g>
-
-        <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="rgba(9,9,11,0.9)" strokeWidth={1.5} />
-        <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-      </svg>
-    </div>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {arcs.map((a) => (
+        <path key={a.id} d={a.path} fill={a.color}>
+          <title>{`${a.label} — ${formatCurrency(a.value)}`}</title>
+        </path>
+      ))}
+      <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="rgba(9,9,11,0.9)" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+    </svg>
   )
 }
 
@@ -222,34 +122,18 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
   const total = slices.reduce((s, x) => s + x.value, 0)
   const maxPct = Math.max(...slices.map((s) => s.pct))
 
-  // Single responsive donut — evita mount doppio (mobile+desktop) che causava collisioni di ID SVG.
-  const [isDesktop, setIsDesktop] = useState(false)
-  useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  const size = isDesktop ? 320 : 240
+  const size = 240
   const rOuter = size * 0.465
   const rInner = size * 0.34
   const arcs = computeArcs(slices, size / 2, size / 2, rOuter, rInner)
 
   return (
     <div className="flex flex-col md:flex-row md:items-start md:gap-10">
-      <div
-        className="relative shrink-0 mx-auto md:mx-0 flex items-center justify-center"
-        style={{ width: size, height: size + 20 }}
-      >
-        <div className="relative">
-          <Donut3D arcs={arcs} size={size} rOuter={rOuter} rInner={rInner} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
-            <p className={`${isDesktop ? 'text-[20px]' : 'text-[18px]'} font-medium text-foreground tabular-nums`}>
-              {formatCurrency(total)}
-            </p>
-          </div>
+      <div className="relative shrink-0 mx-auto md:mx-0">
+        <Donut arcs={arcs} size={size} rOuter={rOuter} rInner={rInner} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[1.5px]">Totale</p>
+          <p className="text-[18px] font-medium text-foreground tabular-nums">{formatCurrency(total)}</p>
         </div>
       </div>
 
@@ -292,5 +176,4 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
   )
 }
 
-export { TYPE_COLORS, RAINBOW }
 export type { Slice }

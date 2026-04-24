@@ -1,11 +1,12 @@
-import { AllocationChart, RAINBOW } from '@/components/charts/AllocationChart'
+import { AllocationChart } from '@/components/charts/AllocationChart'
+import { RAINBOW } from '@/lib/chart-palette'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import type { AccountType } from '@/types'
 import { fetchExchangeRates } from '@/lib/yahoo-finance'
-import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
+import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes } from '@/lib/queries'
 import type { Slice } from '@/components/charts/AllocationChart'
 
 export default async function AnalyticsPage() {
@@ -17,10 +18,6 @@ export default async function AnalyticsPage() {
   const manualPositions = allPositions.filter((p) => p.is_manual)
 
   const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
-
-  const { liveTotal, manualTotal } = computePortfolioTotals(
-    accounts, positionsWithQuotes, manualPositions, liabilities
-  )
 
   // Build one slice per individual asset (not grouped by type) for richer colors.
   type RawAsset = { id: string; type: AccountType; label: string; value: number }
