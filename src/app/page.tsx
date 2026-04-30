@@ -8,7 +8,16 @@ import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
 import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
 import { formatCurrency } from '@/lib/formats'
-import { fetchExchangeRates } from '@/lib/yahoo-finance'
+import {
+  fetchExchangeRates,
+  fetchYahooSubdaySeries,
+  searchTicker,
+  toEur,
+  COMMODITY_MAP,
+  TROY_OZ_TO_G,
+  type SubdaySeries,
+  type ExchangeRates,
+} from '@/lib/yahoo-finance'
 import { fetchAccounts, fetchPositions, fetchLiabilities, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
 
@@ -35,6 +44,48 @@ async function upsertTodayPositionSnapshots(values: { id: string; valueEur: numb
 }
 
 export type DailyTotal = { day: string; total: number; accounts: number; positions: number }
+export type SubdayTotalPoint = { ts: string; total: number }
+
+type SubdayPositionSeries = { points: { ts: string; value: number }[]; previousClose: number | null }
+
+function toPositionEurSeries(
+  series: SubdaySeries | null,
+  isin: string,
+  units: number,
+  rates: ExchangeRates
+): SubdayPositionSeries {
+  if (!series) return { points: [], previousClose: null }
+  const commodity = COMMODITY_MAP[isin]
+  const points = series.points
+    .map((p) => {
+      const raw = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+      return { ts: p.ts, value: toEur(raw, series.currency, rates) * units }
+    })
+    .filter((p) => Number.isFinite(p.value) && p.value > 0)
+  let previousClose: number | null = null
+  if (series.previousClose != null) {
+    const raw = commodity?.pricePerG ? series.previousClose / TROY_OZ_TO_G : series.previousClose
+    previousClose = toEur(raw, series.currency, rates) * units
+  }
+  return { points, previousClose }
+}
+
+function aggregateSubday(
+  positions: SubdayPositionSeries[],
+  staticBase: number
+): SubdayTotalPoint[] {
+  if (positions.every((p) => p.points.length === 0)) return []
+  const allTs = [...new Set(positions.flatMap((s) => s.points.map((p) => p.ts)))].sort()
+  const posMaps = positions.map((s) => new Map(s.points.map((p) => [p.ts, p.value])))
+  const lastValues = new Array(positions.length).fill(0)
+  return allTs.map((ts) => {
+    for (let i = 0; i < positions.length; i++) {
+      const val = posMaps[i].get(ts)
+      if (val !== undefined) lastValues[i] = val
+    }
+    return { ts, total: staticBase + lastValues.reduce((a: number, b: number) => a + b, 0) }
+  })
+}
 
 function computeDailyTotals(
   accountSnapshots: { account_id: string; value: number; recorded_at: string }[],
@@ -91,6 +142,29 @@ export default async function HomePage() {
   const chartData = computeDailyTotals(accountSnapshots, allPosSnaps, liabNet)
   const vaultStart = accountSnapshots[0]?.recorded_at?.slice(0, 10) ?? null
 
+  // Sub-daily portfolio data (only live positions change intraday)
+  const staticBase = accountsTotal + manualPositionsTotal + liabNet
+  const tickers = await Promise.all(positionsWithQuotes.map((p) => searchTicker(p.isin!)))
+  const [subdayResults, intradayResults] = await Promise.all([
+    Promise.all(tickers.map((t) => t ? fetchYahooSubdaySeries(t, '1h', '30d') : Promise.resolve(null))),
+    Promise.all(tickers.map((t) => t ? fetchYahooSubdaySeries(t, '2m', '1d') : Promise.resolve(null))),
+  ])
+  const subdayPositions = subdayResults.map((s, i) =>
+    toPositionEurSeries(s, positionsWithQuotes[i].isin!, positionsWithQuotes[i].units ?? 0, rates)
+  )
+  const intradayPositions = intradayResults.map((s, i) =>
+    toPositionEurSeries(s, positionsWithQuotes[i].isin!, positionsWithQuotes[i].units ?? 0, rates)
+  )
+  const portfolioSubday = aggregateSubday(subdayPositions, staticBase)
+  const portfolioIntraday = aggregateSubday(intradayPositions, staticBase)
+  const hasAnyIntraday = intradayPositions.some((p) => p.points.length > 0)
+  const portfolioPreviousClose = hasAnyIntraday
+    ? staticBase + intradayPositions.reduce(
+        (sum, p, i) => sum + (p.previousClose ?? positionsWithQuotes[i].value),
+        0
+      )
+    : null
+
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
 
   return (
@@ -138,7 +212,13 @@ export default async function HomePage() {
 
             {/* Chart */}
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">
-              <PortfolioChart data={chartData} vaultStart={vaultStart} />
+              <PortfolioChart
+                data={chartData}
+                vaultStart={vaultStart}
+                portfolioIntraday={portfolioIntraday}
+                portfolioSubday={portfolioSubday}
+                portfolioPreviousClose={portfolioPreviousClose}
+              />
             </div>
 
 
