@@ -112,6 +112,52 @@ export function toEur(price: number, currency: string, rates: ExchangeRates): nu
   return price
 }
 
+// ─── Sub-daily series (intraday / hourly) ────────────────────────────────────
+
+export interface SubdayPoint {
+  ts: string // full ISO datetime
+  price: number
+}
+
+export interface SubdaySeries {
+  currency: string
+  previousClose: number | null
+  points: SubdayPoint[]
+}
+
+export async function fetchYahooSubdaySeries(
+  ticker: string,
+  interval: string,
+  range: string
+): Promise<SubdaySeries | null> {
+  try {
+    const revalidate = interval === '2m' ? 120 : 600
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`,
+      { next: { revalidate } }
+    )
+    if (!res.ok) return null
+    const json = await res.json()
+    const result = json?.chart?.result?.[0]
+    if (!result) return null
+    const timestamps: number[] = result.timestamp ?? []
+    const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? []
+    const points: SubdayPoint[] = []
+    for (let i = 0; i < timestamps.length; i++) {
+      const price = closes[i]
+      if (price == null) continue
+      points.push({ ts: new Date(timestamps[i] * 1000).toISOString(), price })
+    }
+    return {
+      currency: result.meta?.currency ?? 'EUR',
+      previousClose: result.meta?.previousClose ?? null,
+      points,
+    }
+  } catch {
+    return null
+  }
+}
+
 // ─── Historical data (backfill) ──────────────────────────────────────────────
 
 export interface HistoricalPoint {

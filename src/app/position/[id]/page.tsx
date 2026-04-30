@@ -8,6 +8,7 @@ import {
   fetchExchangeRates,
   fetchExchangeRatesHistory,
   fetchYahooHistory,
+  fetchYahooSubdaySeries,
   searchTicker,
   toEur,
   toEurOnDate,
@@ -33,6 +34,9 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
   let changePercent: number | undefined
   let pricePerUnit: number | undefined
   let yahooData: { date: string; value: number }[] | undefined
+  let yahooSubdayData: { ts: string; value: number }[] | undefined
+  let yahooIntradayData: { ts: string; value: number }[] | undefined
+  let previousCloseEur: number | undefined
 
   if (!position.is_manual && position.isin) {
     const [quotes, rates, fxHistory, ticker] = await Promise.all([
@@ -48,17 +52,45 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
       changePercent = q.changePercent
     }
     if (ticker) {
-      const series = await fetchYahooHistory(ticker, '1y')
-      if (series && series.points.length > 0) {
-        const commodity = COMMODITY_MAP[position.isin]
-        const units = position.units ?? 0
-        yahooData = series.points
+      const [dailySeries, subdaySeries, intradaySeries] = await Promise.all([
+        fetchYahooHistory(ticker, 'max'),
+        fetchYahooSubdaySeries(ticker, '1h', '30d'),
+        fetchYahooSubdaySeries(ticker, '2m', '1d'),
+      ])
+
+      const commodity = COMMODITY_MAP[position.isin]
+      const units = position.units ?? 0
+      const currency = dailySeries?.currency ?? subdaySeries?.currency ?? intradaySeries?.currency ?? 'EUR'
+
+      if (dailySeries && dailySeries.points.length > 0) {
+        yahooData = dailySeries.points
           .map((p) => {
             const rawPrice = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
-            const priceEur = toEurOnDate(rawPrice, series.currency, p.date, fxHistory, rates)
+            const priceEur = toEurOnDate(rawPrice, dailySeries.currency, p.date, fxHistory, rates)
             return { date: p.date, value: priceEur * units }
           })
           .filter((p) => Number.isFinite(p.value) && p.value > 0)
+      }
+
+      const toSubdayEurPoints = (series: typeof subdaySeries) => {
+        if (!series || series.points.length === 0) return undefined
+        return series.points
+          .map((p) => {
+            const rawPrice = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+            const priceEur = toEur(rawPrice, series.currency, rates)
+            return { ts: p.ts, value: priceEur * units }
+          })
+          .filter((p) => Number.isFinite(p.value) && p.value > 0)
+      }
+
+      yahooSubdayData = toSubdayEurPoints(subdaySeries)
+      yahooIntradayData = toSubdayEurPoints(intradaySeries)
+
+      if (intradaySeries?.previousClose != null) {
+        const rawPrev = commodity?.pricePerG
+          ? intradaySeries.previousClose / TROY_OZ_TO_G
+          : intradaySeries.previousClose
+        previousCloseEur = toEur(rawPrev, currency, rates) * units
       }
     }
   }
@@ -109,7 +141,14 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
 
       {hasChart && (
         <div className="rounded-2xl bg-card border border-border p-4">
-          <DetailChart data={vaultData} yahoo={yahooData} vaultStart={vaultStart} />
+          <DetailChart
+            data={vaultData}
+            yahoo={yahooData}
+            vaultStart={vaultStart}
+            yahooIntraday={yahooIntradayData}
+            yahooSubday={yahooSubdayData}
+            previousClose={previousCloseEur}
+          />
         </div>
       )}
 
