@@ -1,4 +1,4 @@
-import type { Liability, LiabilitySubtype } from '@/types'
+import type { BillingCycle, Liability, LiabilitySubtype } from '@/types'
 
 function monthsBetween(from: Date, to: Date): number {
   return (
@@ -11,7 +11,18 @@ export function isStructuredDebt(subtype: LiabilitySubtype): boolean {
   return subtype === 'mortgage' || subtype === 'installment'
 }
 
+const CYCLE_MONTHS: Record<BillingCycle, number> = {
+  monthly: 1, quarterly: 3, semiannual: 6, annual: 12,
+}
+
+export function subscriptionMonthlyAmount(l: Liability): number {
+  if (l.subtype !== 'subscription' || !l.billing_cycle) return 0
+  return l.amount / CYCLE_MONTHS[l.billing_cycle]
+}
+
 export function liabilityBalance(l: Liability): number {
+  if (l.subtype === 'subscription') return 0
+
   const today = new Date()
 
   if (l.subtype === 'mortgage') {

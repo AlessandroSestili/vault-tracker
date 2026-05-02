@@ -1,5 +1,5 @@
 import { fetchLiabilities } from '@/lib/queries'
-import { liabilityBalance } from '@/lib/liability-calc'
+import { liabilityBalance, subscriptionMonthlyAmount } from '@/lib/liability-calc'
 import { LiabilitiesList } from '@/components/liabilities/LiabilitiesList'
 import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 
@@ -7,12 +7,16 @@ export default async function LiabilitiesPage() {
   const liabilities = await fetchLiabilities()
 
   const debtsTotal = liabilities
-    .filter(l => l.type === 'debt')
+    .filter(l => l.type === 'debt' && l.subtype !== 'subscription')
     .reduce((s, l) => s + liabilityBalance(l), 0)
   const creditsTotal = liabilities
     .filter(l => l.type === 'credit')
     .reduce((s, l) => s + liabilityBalance(l), 0)
   const liabNet = creditsTotal - debtsTotal
+  const subscriptionsMonthlyTotal = liabilities
+    .filter(l => l.subtype === 'subscription')
+    .reduce((s, l) => s + subscriptionMonthlyAmount(l), 0)
+  const subscriptionsAnnualTotal = subscriptionsMonthlyTotal * 12
 
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
@@ -36,6 +40,8 @@ export default async function LiabilitiesPage() {
           debtsTotal={debtsTotal}
           creditsTotal={creditsTotal}
           liabNet={liabNet}
+          subscriptionsMonthlyTotal={subscriptionsMonthlyTotal}
+          subscriptionsAnnualTotal={subscriptionsAnnualTotal}
         />
 
       </div>

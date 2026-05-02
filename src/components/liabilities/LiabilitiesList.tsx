@@ -12,7 +12,11 @@ import { deleteLiability } from '@/lib/actions'
 import type { Liability } from '@/types'
 import { SUBTYPE_LABEL } from '@/lib/account-config'
 import { formatCurrency, formatDate } from '@/lib/formats'
-import { liabilityBalance, isStructuredDebt } from '@/lib/liability-calc'
+import { liabilityBalance, isStructuredDebt, subscriptionMonthlyAmount } from '@/lib/liability-calc'
+
+const BILLING_CYCLE_LABEL: Record<string, string> = {
+  monthly: 'mensile', quarterly: 'trimestrale', semiannual: 'semestrale', annual: 'annuale',
+}
 
 type Modal =
   | { kind: 'edit'; data: Liability }
@@ -95,22 +99,29 @@ export function LiabilitiesList({
   debtsTotal,
   creditsTotal,
   liabNet,
+  subscriptionsMonthlyTotal,
+  subscriptionsAnnualTotal,
 }: {
   liabilities: Liability[]
   debtsTotal: number
   creditsTotal: number
   liabNet: number
+  subscriptionsMonthlyTotal: number
+  subscriptionsAnnualTotal: number
 }) {
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<Modal>(null)
-  const [openGroups, setOpenGroups] = useState({ debts: true, credits: true })
+  const [openGroups, setOpenGroups] = useState({ debts: true, credits: true, subscriptions: true })
 
   const debts = [...liabilities]
-    .filter(l => l.type === 'debt')
+    .filter(l => l.type === 'debt' && l.subtype !== 'subscription')
     .sort((a, b) => liabilityBalance(b) - liabilityBalance(a))
   const credits = [...liabilities]
     .filter(l => l.type === 'credit')
     .sort((a, b) => liabilityBalance(b) - liabilityBalance(a))
+  const subscriptions = [...liabilities]
+    .filter(l => l.subtype === 'subscription')
+    .sort((a, b) => subscriptionMonthlyAmount(b) - subscriptionMonthlyAmount(a))
 
   function openSheet(item: SheetItem) {
     if (window.innerWidth >= 768) return
@@ -125,7 +136,7 @@ export function LiabilitiesList({
   if (liabilities.length === 0) {
     return (
       <div className="text-center py-12 font-mono text-[12px] text-[#52525b] tracking-[0.4px]">
-        Nessun debito o credito.
+        Nessun debito, credito o abbonamento.
       </div>
     )
   }
@@ -135,7 +146,7 @@ export function LiabilitiesList({
   return (
     <>
       {/* KPI strip */}
-      <div className="flex items-start gap-6 md:gap-10 mb-6 md:mb-8 font-mono">
+      <div className="flex items-start gap-6 md:gap-10 mb-6 md:mb-8 font-mono flex-wrap">
         {debtsTotal > 0 && (
           <div>
             <p className="text-[10px] tracking-[1.5px] uppercase text-muted-foreground mb-1.5">Debiti</p>
@@ -157,6 +168,17 @@ export function LiabilitiesList({
             <p className="text-[10px] tracking-[1.5px] uppercase text-muted-foreground mb-1.5">Netto</p>
             <p className={`text-[18px] font-medium tabular-nums tracking-[-0.5px] ${liabNet >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]'}`}>
               {liabNet >= 0 ? '+' : '−'}{formatCurrency(Math.abs(liabNet))}
+            </p>
+          </div>
+        )}
+        {subscriptionsMonthlyTotal > 0 && (
+          <div>
+            <p className="text-[10px] tracking-[1.5px] uppercase text-muted-foreground mb-1.5">Abbonamenti</p>
+            <p className="text-[18px] font-medium tabular-nums tracking-[-0.5px] text-foreground">
+              {formatCurrency(subscriptionsMonthlyTotal)}<span className="text-[12px] text-muted-foreground font-normal">/mese</span>
+            </p>
+            <p className="font-mono text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+              {formatCurrency(subscriptionsAnnualTotal)}/anno
             </p>
           </div>
         )}
@@ -241,6 +263,50 @@ export function LiabilitiesList({
                   </p>
                   <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">
                     {info ?? 'credito'}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Subscriptions group */}
+      {subscriptions.length > 0 && (
+        <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2 mt-4">
+          <GroupHeader
+            label="Abbonamenti"
+            count={subscriptions.length}
+            total={`${formatCurrency(subscriptionsMonthlyTotal)}/mese`}
+            totalColor="text-foreground/70"
+            open={openGroups.subscriptions}
+            onToggle={() => setOpenGroups(p => ({ ...p, subscriptions: !p.subscriptions }))}
+          />
+          {openGroups.subscriptions && subscriptions.map((l) => {
+            const monthlyAmt = subscriptionMonthlyAmount(l)
+            const cycleLabel = l.billing_cycle ? BILLING_CYCLE_LABEL[l.billing_cycle] : ''
+            return (
+              <div key={l.id} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
+                <LogoAvatar name={l.name} catColor="oklch(0.72 0.02 260)" customImageUrl={l.image_url} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
+                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                    {cycleLabel}
+                    {l.counterparty && ` · ${l.counterparty}`}
+                    {l.day_of_month && ` · giorno ${l.day_of_month}`}
+                  </p>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <DeskLink href={`/liability/${l.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
+                  <DeskBtn onClick={() => setModal({ kind: 'edit', data: l })}><Pencil className="w-3.5 h-3.5" /></DeskBtn>
+                  <DeskBtn onClick={() => setModal({ kind: 'delete', data: l })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
+                </div>
+                <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">
+                    {formatCurrency(l.amount, l.currency)}
+                  </p>
+                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">
+                    {formatCurrency(monthlyAmt)}/mese
                   </p>
                 </div>
               </div>

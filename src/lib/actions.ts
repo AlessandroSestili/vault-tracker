@@ -207,6 +207,8 @@ export async function createLiability(data: {
   interestRate?: number
   nextPaymentDate?: string
   dueDate?: string
+  billingCycle?: string
+  dayOfMonth?: number
 }) {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
@@ -225,6 +227,8 @@ export async function createLiability(data: {
     interest_rate: data.interestRate ?? null,
     next_payment_date: data.nextPaymentDate ?? null,
     due_date: data.dueDate ?? null,
+    billing_cycle: data.billingCycle ?? null,
+    day_of_month: data.dayOfMonth ?? null,
     user_id: userId,
   })
   if (error) throw new Error(error.message)
@@ -244,6 +248,8 @@ export async function updateLiability(id: string, data: {
   interestRate?: number
   nextPaymentDate?: string
   dueDate?: string
+  billingCycle?: string
+  dayOfMonth?: number
 }) {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
@@ -261,6 +267,8 @@ export async function updateLiability(id: string, data: {
     interest_rate: data.interestRate ?? null,
     next_payment_date: data.nextPaymentDate ?? null,
     due_date: data.dueDate ?? null,
+    billing_cycle: data.billingCycle ?? null,
+    day_of_month: data.dayOfMonth ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidateAll()

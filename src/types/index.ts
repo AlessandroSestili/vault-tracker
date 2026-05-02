@@ -40,6 +40,9 @@ export type LiabilitySubtype =
   | 'informal_debt'
   | 'dated_credit'
   | 'informal_credit'
+  | 'subscription'
+
+export type BillingCycle = 'monthly' | 'quarterly' | 'semiannual' | 'annual'
 
 export type PositionWithQuote = Position & {
   price: number
@@ -75,5 +78,7 @@ export interface Liability {
   interest_rate: number | null
   next_payment_date: string | null
   due_date: string | null
+  billing_cycle: BillingCycle | null
+  day_of_month: number | null
   created_at: string
 }
