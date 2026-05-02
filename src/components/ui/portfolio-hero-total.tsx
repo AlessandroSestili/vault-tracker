@@ -6,15 +6,13 @@ import { formatCurrency } from '@/lib/formats'
 interface Props {
   contiTotal: number
   posizioniTotal: number
-  liabNet: number
 }
 
-export function PortfolioHeroTotal({ contiTotal, posizioniTotal, liabNet }: Props) {
-  const { showAccounts, showPositions, showLiabilities } = useVisibility()
+export function PortfolioHeroTotal({ contiTotal, posizioniTotal }: Props) {
+  const { showAccounts, showPositions } = useVisibility()
   const total =
     (showAccounts ? contiTotal : 0) +
-    (showPositions ? posizioniTotal : 0) +
-    (showLiabilities ? liabNet : 0)
+    (showPositions ? posizioniTotal : 0)
   const formatted = formatCurrency(total)
   const totalNumber = formatted.replace(/\s*€$/, '')
   return (

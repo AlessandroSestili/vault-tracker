@@ -22,7 +22,7 @@ export default async function InsightsPage() {
   const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
 
   const { total } = computePortfolioTotals(
-    accounts, positionsWithQuotes, manualPositions, liabilities
+    accounts, positionsWithQuotes, manualPositions
   )
 
   const rings: OrbitRing[] = []

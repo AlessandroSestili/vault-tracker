@@ -9,6 +9,7 @@ function revalidateAll() {
   revalidatePath('/')
   revalidatePath('/analytics')
   revalidatePath('/insights')
+  revalidatePath('/liabilities')
 }
 
 async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {

@@ -5,11 +5,10 @@ import { Plus, ChevronRight } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { AddAccountDialog } from './AddAccountDialog'
 import { AddPositionDialog } from '@/components/positions/AddPositionDialog'
-import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { AddRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
 import type { AccountWithLatestSnapshot } from '@/types'
 
-type AddKind = 'account' | 'position' | 'liability' | 'recurring' | null
+type AddKind = 'account' | 'position' | 'recurring' | null
 
 const BASE_OPTIONS = [
   {
@@ -21,11 +20,6 @@ const BASE_OPTIONS = [
     kind: 'position' as const,
     label: 'Posizione',
     sub: 'ETF, azione o asset manuale',
-  },
-  {
-    kind: 'liability' as const,
-    label: 'Debito · Credito',
-    sub: 'Mutuo, prestito, credito a scadenza',
   },
 ]
 
@@ -118,7 +112,6 @@ export function AddItemSheet({
 
       <AddAccountDialog  open={adding === 'account'}   onOpenChange={(o) => !o && setAdding(null)} />
       <AddPositionDialog open={adding === 'position'}  onOpenChange={(o) => !o && setAdding(null)} />
-      <AddLiabilityDialog open={adding === 'liability'} onOpenChange={(o) => !o && setAdding(null)} />
       {accounts && (
         <AddRecurringIncomeDialog accounts={accounts} open={adding === 'recurring'} onOpenChange={(o) => !o && setAdding(null)} />
       )}

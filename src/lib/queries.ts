@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { fetchQuotesByIsins, toEur, type ExchangeRates } from '@/lib/yahoo-finance'
-import { liabilityBalance } from '@/lib/liability-calc'
 import type { AccountWithLatestSnapshot, Position, Liability, RecurringIncome, PositionWithQuote } from '@/types'
 
 export async function fetchAccounts(): Promise<AccountWithLatestSnapshot[]> {
@@ -68,19 +67,11 @@ export async function mapPositionsWithQuotes(
 export function computePortfolioTotals(
   accounts: AccountWithLatestSnapshot[],
   positionsWithQuotes: PositionWithQuote[],
-  manualPositions: Position[],
-  liabilities: Liability[]
+  manualPositions: Position[]
 ) {
   const liveTotal = positionsWithQuotes.reduce((s, p) => s + p.value, 0)
   const manualTotal = manualPositions.reduce((s, p) => s + (p.current_value_eur ?? 0), 0)
   const accountsTotal = accounts.reduce((s, a) => s + (a.latest_value ?? 0), 0)
-  const debtsTotal = liabilities
-    .filter((l) => l.type === 'debt')
-    .reduce((s, l) => s + liabilityBalance(l), 0)
-  const creditsTotal = liabilities
-    .filter((l) => l.type === 'credit')
-    .reduce((s, l) => s + liabilityBalance(l), 0)
-  const liabNet = creditsTotal - debtsTotal
-  const total = liveTotal + manualTotal + accountsTotal + liabNet
-  return { liveTotal, manualTotal, accountsTotal, debtsTotal, creditsTotal, liabNet, total }
+  const total = liveTotal + manualTotal + accountsTotal
+  return { liveTotal, manualTotal, accountsTotal, total }
 }

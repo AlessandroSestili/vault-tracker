@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Wallet, BarChart2, Atom } from 'lucide-react'
+import { Wallet, BarChart2, CreditCard } from 'lucide-react'
 
 const tabs = [
-  { href: '/',          label: 'Portafoglio', Icon: Wallet },
-  { href: '/analytics', label: 'Analytics',   Icon: BarChart2 },
-  { href: '/insights',  label: 'Orbit',       Icon: Atom },
+  { href: '/',            label: 'Portafoglio', Icon: Wallet },
+  { href: '/analytics',   label: 'Analytics',   Icon: BarChart2 },
+  { href: '/liabilities', label: 'Debiti',      Icon: CreditCard },
 ]
 
 export function BottomNav() {

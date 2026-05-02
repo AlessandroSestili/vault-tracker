@@ -55,7 +55,7 @@ export function TopNav() {
         <div className="hidden md:flex items-center gap-1">
           {navLink('/', 'Portafoglio')}
           {navLink('/analytics', 'Analytics')}
-          {navLink('/insights', 'Orbit')}
+          {navLink('/liabilities', 'Debiti')}
         </div>
         <div className="hidden md:flex flex-1 justify-end">
           <ProfileSheet variant="desktop" />

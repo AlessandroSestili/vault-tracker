@@ -6,12 +6,12 @@ import { AddItemSheet } from '@/components/accounts/AddItemSheet'
 import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import type { AccountType } from '@/types'
 import { fetchExchangeRates } from '@/lib/yahoo-finance'
-import { fetchAccounts, fetchPositions, fetchLiabilities, mapPositionsWithQuotes } from '@/lib/queries'
+import { fetchAccounts, fetchPositions, mapPositionsWithQuotes } from '@/lib/queries'
 import type { Slice } from '@/components/charts/AllocationChart'
 
 export default async function AnalyticsPage() {
-  const [accounts, allPositions, liabilities, rates] = await Promise.all([
-    fetchAccounts(), fetchPositions(), fetchLiabilities(), fetchExchangeRates(),
+  const [accounts, allPositions, rates] = await Promise.all([
+    fetchAccounts(), fetchPositions(), fetchExchangeRates(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
@@ -59,7 +59,7 @@ export default async function AnalyticsPage() {
     pct: sliceTotal > 0 ? (asset.value / sliceTotal) * 100 : 0,
   }))
 
-  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
+  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions]
 
   return (
     <VisibilityProvider>
@@ -98,7 +98,6 @@ export default async function AnalyticsPage() {
               accounts={accounts}
               positionsWithQuotes={positionsWithQuotes}
               manualPositions={manualPositions}
-              liabilities={liabilities}
             />
           </div>
         </div>

@@ -7,7 +7,6 @@ import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
 import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
-import { formatCurrency } from '@/lib/formats'
 import {
   fetchExchangeRates,
   fetchYahooSubdaySeries,
@@ -18,7 +17,7 @@ import {
   type SubdaySeries,
   type ExchangeRates,
 } from '@/lib/yahoo-finance'
-import { fetchAccounts, fetchPositions, fetchLiabilities, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
+import { fetchAccounts, fetchPositions, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
 
 async function getAccountSnapshots() {
@@ -89,8 +88,7 @@ function aggregateSubday(
 
 function computeDailyTotals(
   accountSnapshots: { account_id: string; value: number; recorded_at: string }[],
-  positionSnapshots: { position_id: string; value_eur: number; recorded_at: string }[],
-  liabNet: number
+  positionSnapshots: { position_id: string; value_eur: number; recorded_at: string }[]
 ): DailyTotal[] {
   const latestAccounts: Record<string, number> = {}
   const latestPositions: Record<string, number> = {}
@@ -112,15 +110,15 @@ function computeDailyTotals(
     Object.assign(latestPositions, byDay[day].positions)
     const accounts = Object.values(latestAccounts).reduce((a, b) => a + b, 0)
     const positions = Object.values(latestPositions).reduce((a, b) => a + b, 0)
-    return { day, total: accounts + positions + liabNet, accounts, positions }
+    return { day, total: accounts + positions, accounts, positions }
   })
 }
 
 export default async function HomePage() {
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
-  const [accounts, liabilities, recurringIncomes, accountSnapshots, positionSnapshots] = await Promise.all([
-    fetchAccounts(), fetchLiabilities(), fetchRecurringIncomes(),
+  const [accounts, recurringIncomes, accountSnapshots, positionSnapshots] = await Promise.all([
+    fetchAccounts(), fetchRecurringIncomes(),
     getAccountSnapshots(),
     backfillMissingHistory(allPositions, rates).then(() => getPositionSnapshots()),
   ])
@@ -132,18 +130,18 @@ export default async function HomePage() {
 
   await upsertTodayPositionSnapshots(positionsWithQuotes.map((p) => ({ id: p.id, valueEur: p.value })))
 
-  const { liveTotal, manualTotal: manualPositionsTotal, accountsTotal, debtsTotal, liabNet } =
-    computePortfolioTotals(accounts, positionsWithQuotes, manualPositions, liabilities)
+  const { liveTotal, manualTotal: manualPositionsTotal, accountsTotal } =
+    computePortfolioTotals(accounts, positionsWithQuotes, manualPositions)
 
   const todayPosSnaps = positionsWithQuotes.map((p) => ({ position_id: p.id, value_eur: p.value, recorded_at: new Date().toISOString().slice(0, 10) }))
   const allPosSnaps = Object.values(Object.fromEntries(
     [...positionSnapshots, ...todayPosSnaps].map((s) => [`${s.position_id}_${s.recorded_at.slice(0, 10)}`, s])
   ))
-  const chartData = computeDailyTotals(accountSnapshots, allPosSnaps, liabNet)
+  const chartData = computeDailyTotals(accountSnapshots, allPosSnaps)
   const vaultStart = accountSnapshots[0]?.recorded_at?.slice(0, 10) ?? null
 
   // Sub-daily portfolio data (only live positions change intraday)
-  const staticBase = accountsTotal + manualPositionsTotal + liabNet
+  const staticBase = accountsTotal + manualPositionsTotal
   const tickers = await Promise.all(positionsWithQuotes.map((p) => searchTicker(p.isin!)))
   const [subdayResults, intradayResults] = await Promise.all([
     Promise.all(tickers.map((t) => t ? fetchYahooSubdaySeries(t, '1h', '30d') : Promise.resolve(null))),
@@ -165,7 +163,7 @@ export default async function HomePage() {
       )
     : null
 
-  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions, ...liabilities]
+  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions]
 
   return (
     <VisibilityProvider>
@@ -185,7 +183,6 @@ export default async function HomePage() {
               <PortfolioHeroTotal
                 contiTotal={accountsTotal}
                 posizioniTotal={liveTotal + manualPositionsTotal}
-                liabNet={liabNet}
               />
 
               {/* Stats row */}
@@ -199,11 +196,6 @@ export default async function HomePage() {
                 <span className="text-muted-foreground">
                   EUR/USD <span className="text-foreground/60 tabular-nums">{rates.USD.toFixed(4)}</span>
                 </span>
-                {debtsTotal > 0 && (
-                  <span className="text-destructive tabular-nums">
-                    Debiti {formatCurrency(debtsTotal)}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -242,7 +234,6 @@ export default async function HomePage() {
                 accounts={accounts}
                 positionsWithQuotes={positionsWithQuotes}
                 manualPositions={manualPositions}
-                liabilities={liabilities}
                 incomes={recurringIncomes}
               />
             </div>
