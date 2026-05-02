@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LogOut, Moon, Sun, Monitor, User, Mail, Bell, BellOff } from 'lucide-react'
+import { LogOut, Moon, Sun, User, Mail, Bell, BellOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
@@ -27,7 +27,6 @@ function getStoredTheme(): Theme {
 const THEMES: { value: Theme; label: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }[] = [
   { value: 'dark', label: 'Scuro', Icon: Moon },
   { value: 'light', label: 'Chiaro', Icon: Sun },
-  { value: 'system', label: 'Sistema', Icon: Monitor },
 ]
 
 export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'desktop' }) {
