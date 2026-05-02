@@ -2,6 +2,7 @@ import { fetchLiabilities } from '@/lib/queries'
 import { liabilityBalance, subscriptionMonthlyAmount } from '@/lib/liability-calc'
 import { LiabilitiesList } from '@/components/liabilities/LiabilitiesList'
 import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
+import { LiabilitiesFab } from '@/components/liabilities/LiabilitiesFab'
 
 export default async function LiabilitiesPage() {
   const liabilities = await fetchLiabilities()
@@ -19,6 +20,7 @@ export default async function LiabilitiesPage() {
   const subscriptionsAnnualTotal = subscriptionsMonthlyTotal * 12
 
   return (
+    <>
     <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
       <div className="max-w-[680px]">
 
@@ -31,7 +33,9 @@ export default async function LiabilitiesPage() {
             <p className="text-[26px] font-medium text-[#fafafa] tracking-[-0.6px] leading-[1.1]">
               Debiti & Crediti
             </p>
-            <AddLiabilityDialog />
+            <div className="hidden md:block">
+              <AddLiabilityDialog />
+            </div>
           </div>
         </div>
 
@@ -46,5 +50,7 @@ export default async function LiabilitiesPage() {
 
       </div>
     </div>
+    <LiabilitiesFab />
+    </>
   )
 }
