@@ -4,8 +4,7 @@ import {
   fetchYahooHistory,
   fetchExchangeRatesHistory,
   toEurOnDate,
-  COMMODITY_MAP,
-  TROY_OZ_TO_G,
+  normalizeCommodityPrice,
   type ExchangeRates,
 } from '@/lib/yahoo-finance'
 import type { Position } from '@/types'
@@ -36,10 +35,12 @@ export async function backfillMissingHistory(
 
   const fxHistory = await fetchExchangeRatesHistory('1y')
   const today = new Date().toISOString().slice(0, 10)
+  const recalcFrom = new Date()
+  recalcFrom.setDate(recalcFrom.getDate() - 7)
+  const recalcCutoff = recalcFrom.toISOString().slice(0, 10)
 
   await Promise.allSettled(
     live.map(async (pos) => {
-      const commodity = COMMODITY_MAP[pos.isin!]
       const ticker = await searchTicker(pos.isin!)
       if (!ticker) return
       const series = await fetchYahooHistory(ticker, '1y')
@@ -51,8 +52,9 @@ export async function backfillMissingHistory(
 
       for (const point of series.points) {
         if (point.date >= today) continue
-        if (existingDates.has(point.date)) continue
-        const rawPrice = commodity?.pricePerG ? point.price / TROY_OZ_TO_G : point.price
+        // skip only dates outside the 7-day recalc window that already have a value
+        if (existingDates.has(point.date) && point.date < recalcCutoff) continue
+        const rawPrice = normalizeCommodityPrice(point.price, pos.isin!)
         const priceEur = toEurOnDate(rawPrice, series.currency, point.date, fxHistory, rates)
         const valueEur = priceEur * units
         if (!Number.isFinite(valueEur) || valueEur <= 0) continue
@@ -67,7 +69,7 @@ export async function backfillMissingHistory(
           .from('position_snapshots')
           .upsert(rows.slice(i, i + BATCH), {
             onConflict: 'position_id,recorded_at',
-            ignoreDuplicates: true,
+            ignoreDuplicates: false,
           })
       }
     })

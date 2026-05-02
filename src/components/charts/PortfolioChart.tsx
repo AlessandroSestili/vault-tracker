@@ -15,7 +15,7 @@ import {
 } from 'recharts'
 import { formatCurrency, formatChartDate } from '@/lib/formats'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
-import type { SubdayTotalPoint } from '@/app/page'
+import type { SubdayTotalPoint } from '@/lib/queries'
 
 type DataPoint = { day: string; total: number; accounts: number; positions: number }
 type EnrichedPoint = { day: string; total: number | null; accounts: number | null; positions: number }

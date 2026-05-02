@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { RefreshButton } from '@/components/accounts/RefreshButton'
 import { AccountsList } from '@/components/accounts/AccountsList'
 import { AddItemSheet } from '@/components/accounts/AddItemSheet'
@@ -12,38 +11,20 @@ import {
   fetchYahooSubdaySeries,
   searchTicker,
   toEur,
-  COMMODITY_MAP,
-  TROY_OZ_TO_G,
+  normalizeCommodityPrice,
   type SubdaySeries,
   type ExchangeRates,
 } from '@/lib/yahoo-finance'
-import { fetchAccounts, fetchPositions, fetchRecurringIncomes, mapPositionsWithQuotes, computePortfolioTotals } from '@/lib/queries'
+import {
+  fetchAccounts, fetchPositions, fetchRecurringIncomes,
+  mapPositionsWithQuotes, computePortfolioTotals,
+  fetchAccountSnapshots, fetchPositionSnapshots,
+  upsertTodayPositionSnapshots, computeDailyTotals,
+  type DailyTotal, type SubdayTotalPoint,
+} from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
 
-async function getAccountSnapshots() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('snapshots').select('account_id, value, recorded_at').order('recorded_at', { ascending: true })
-  return data ?? []
-}
-
-async function getPositionSnapshots() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('position_snapshots').select('position_id, value_eur, recorded_at').order('recorded_at', { ascending: true })
-  return data ?? []
-}
-
-async function upsertTodayPositionSnapshots(values: { id: string; valueEur: number }[]) {
-  if (values.length === 0) return
-  const supabase = await createClient()
-  const today = new Date().toISOString().slice(0, 10)
-  await supabase.from('position_snapshots').upsert(
-    values.map((v) => ({ position_id: v.id, value_eur: v.valueEur, recorded_at: today })),
-    { onConflict: 'position_id,recorded_at' }
-  )
-}
-
-export type DailyTotal = { day: string; total: number; accounts: number; positions: number }
-export type SubdayTotalPoint = { ts: string; total: number }
+export type { SubdayTotalPoint } from '@/lib/queries'
 
 type SubdayPositionSeries = { points: { ts: string; value: number }[]; previousClose: number | null }
 
@@ -54,16 +35,15 @@ function toPositionEurSeries(
   rates: ExchangeRates
 ): SubdayPositionSeries {
   if (!series) return { points: [], previousClose: null }
-  const commodity = COMMODITY_MAP[isin]
   const points = series.points
     .map((p) => {
-      const raw = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+      const raw = normalizeCommodityPrice(p.price, isin)
       return { ts: p.ts, value: toEur(raw, series.currency, rates) * units }
     })
     .filter((p) => Number.isFinite(p.value) && p.value > 0)
   let previousClose: number | null = null
   if (series.previousClose != null) {
-    const raw = commodity?.pricePerG ? series.previousClose / TROY_OZ_TO_G : series.previousClose
+    const raw = normalizeCommodityPrice(series.previousClose, isin)
     previousClose = toEur(raw, series.currency, rates) * units
   }
   return { points, previousClose }
@@ -86,41 +66,13 @@ function aggregateSubday(
   })
 }
 
-function computeDailyTotals(
-  accountSnapshots: { account_id: string; value: number; recorded_at: string }[],
-  positionSnapshots: { position_id: string; value_eur: number; recorded_at: string }[]
-): DailyTotal[] {
-  const latestAccounts: Record<string, number> = {}
-  const latestPositions: Record<string, number> = {}
-  const byDay: Record<string, { accounts: Record<string, number>; positions: Record<string, number> }> = {}
-
-  for (const s of accountSnapshots) {
-    const day = s.recorded_at.slice(0, 10)
-    if (!byDay[day]) byDay[day] = { accounts: {}, positions: {} }
-    byDay[day].accounts[s.account_id] = s.value
-  }
-  for (const s of positionSnapshots) {
-    const day = s.recorded_at.slice(0, 10)
-    if (!byDay[day]) byDay[day] = { accounts: {}, positions: {} }
-    byDay[day].positions[s.position_id] = s.value_eur
-  }
-
-  return Object.keys(byDay).sort().map((day) => {
-    Object.assign(latestAccounts, byDay[day].accounts)
-    Object.assign(latestPositions, byDay[day].positions)
-    const accounts = Object.values(latestAccounts).reduce((a, b) => a + b, 0)
-    const positions = Object.values(latestPositions).reduce((a, b) => a + b, 0)
-    return { day, total: accounts + positions, accounts, positions }
-  })
-}
-
 export default async function HomePage() {
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
   const [accounts, recurringIncomes, accountSnapshots, positionSnapshots] = await Promise.all([
     fetchAccounts(), fetchRecurringIncomes(),
-    getAccountSnapshots(),
-    backfillMissingHistory(allPositions, rates).then(() => getPositionSnapshots()),
+    fetchAccountSnapshots(),
+    backfillMissingHistory(allPositions, rates).then(() => fetchPositionSnapshots()),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)

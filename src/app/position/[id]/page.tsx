@@ -12,8 +12,7 @@ import {
   searchTicker,
   toEur,
   toEurOnDate,
-  COMMODITY_MAP,
-  TROY_OZ_TO_G,
+  normalizeCommodityPrice,
 } from '@/lib/yahoo-finance'
 
 export default async function PositionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,14 +57,13 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         fetchYahooSubdaySeries(ticker, '2m', '1d'),
       ])
 
-      const commodity = COMMODITY_MAP[position.isin]
       const units = position.units ?? 0
       const currency = dailySeries?.currency ?? subdaySeries?.currency ?? intradaySeries?.currency ?? 'EUR'
 
       if (dailySeries && dailySeries.points.length > 0) {
         yahooData = dailySeries.points
           .map((p) => {
-            const rawPrice = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+            const rawPrice = normalizeCommodityPrice(p.price, position.isin!)
             const priceEur = toEurOnDate(rawPrice, dailySeries.currency, p.date, fxHistory, rates)
             return { date: p.date, value: priceEur * units }
           })
@@ -76,7 +74,7 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         if (!series || series.points.length === 0) return undefined
         return series.points
           .map((p) => {
-            const rawPrice = commodity?.pricePerG ? p.price / TROY_OZ_TO_G : p.price
+            const rawPrice = normalizeCommodityPrice(p.price, position.isin!)
             const priceEur = toEur(rawPrice, series.currency, rates)
             return { ts: p.ts, value: priceEur * units }
           })
@@ -87,9 +85,7 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
       yahooIntradayData = toSubdayEurPoints(intradaySeries)
 
       if (intradaySeries?.previousClose != null) {
-        const rawPrev = commodity?.pricePerG
-          ? intradaySeries.previousClose / TROY_OZ_TO_G
-          : intradaySeries.previousClose
+        const rawPrev = normalizeCommodityPrice(intradaySeries.previousClose, position.isin!)
         previousCloseEur = toEur(rawPrev, currency, rates) * units
       }
     }

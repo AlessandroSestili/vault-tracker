@@ -59,7 +59,7 @@ export async function fetchQuoteByIsin(isin: string): Promise<Quote | null> {
   if (!ticker) return null
   const quote = await fetchQuote(ticker)
   if (!quote) return null
-  const price = commodity?.pricePerG ? quote.price / TROY_OZ_TO_G : quote.price
+  const price = normalizeCommodityPrice(quote.price, isin)
   const name = commodity?.name ?? quote.name
   return { isin, ticker, ...quote, price, name }
 }
@@ -100,6 +100,11 @@ export async function fetchExchangeRates(): Promise<ExchangeRates> {
     fetchPairRate('EURCHF'),
   ])
   return { USD: usd ?? 1, GBP: gbp ?? 1, CHF: chf ?? 1 }
+}
+
+export function normalizeCommodityPrice(price: number, isin: string): number {
+  const commodity = COMMODITY_MAP[isin]
+  return commodity?.pricePerG ? price / TROY_OZ_TO_G : price
 }
 
 export function toEur(price: number, currency: string, rates: ExchangeRates): number {
