@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { LogOut, Moon, Sun, User, Mail, Bell, BellOff, CreditCard, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { UpgradeModal } from '@/components/ui/upgrade-modal'
@@ -65,7 +66,6 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
   const initials = email ? email.slice(0, 2).toUpperCase() : 'V'
 
   const [plan, setPlan] = useState<Plan>('free')
-  const [portalLoading, setPortalLoading] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   useEffect(() => {
@@ -78,17 +78,6 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
         if (data?.plan) setPlan(data.plan as Plan)
       })
   }, [open])
-
-  async function handlePortal() {
-    setPortalLoading(true)
-    try {
-      const res = await fetch('/api/stripe/portal', { method: 'POST' })
-      const { url } = await res.json()
-      if (url) window.location.href = url
-    } finally {
-      setPortalLoading(false)
-    }
-  }
 
   const [notifStatus, setNotifStatus] = useState<'unsupported' | 'denied' | 'subscribed' | 'unsubscribed'>('unsupported')
 
@@ -202,22 +191,23 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
                 </div>
               </div>
               {isPro(plan) ? (
-                <button
-                  onClick={handlePortal}
-                  disabled={portalLoading}
-                  className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground border border-border rounded px-2.5 py-1.5 hover:border-white/20 hover:text-foreground transition-colors disabled:opacity-40"
+                <Link
+                  href="/billing"
+                  onClick={() => setOpen(false)}
+                  className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground border border-border rounded px-2.5 py-1.5 hover:border-white/20 hover:text-foreground transition-colors"
                 >
-                  {portalLoading ? '…' : 'Gestisci'}
-                </button>
+                  Gestisci
+                </Link>
               ) : (
-                <button
-                  onClick={() => setUpgradeOpen(true)}
+                <Link
+                  href="/billing"
+                  onClick={() => setOpen(false)}
                   className="flex items-center gap-1 font-mono text-[10px] tracking-[1px] uppercase rounded px-2.5 py-1.5 transition-colors"
                   style={{ background: '#a3e635', color: '#09090b' }}
                 >
                   <Zap className="w-3 h-3" strokeWidth={2} />
                   Pro
-                </button>
+                </Link>
               )}
             </div>
           </div>
