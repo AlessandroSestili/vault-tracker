@@ -6,7 +6,10 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { AddAccountDialog } from './AddAccountDialog'
 import { AddPositionDialog } from '@/components/positions/AddPositionDialog'
 import { AddRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
+import { UpgradeModal } from '@/components/ui/upgrade-modal'
 import type { AccountWithLatestSnapshot } from '@/types'
+import type { PlanLimits, ResourceType } from '@/lib/plan-config'
+import { isAtLimit } from '@/lib/plan-config'
 
 type AddKind = 'account' | 'position' | 'recurring' | null
 
@@ -15,11 +18,13 @@ const BASE_OPTIONS = [
     kind: 'account' as const,
     label: 'Conto',
     sub: 'Corrente, pensione, crypto wallet',
+    resource: 'accounts' as ResourceType,
   },
   {
     kind: 'position' as const,
     label: 'Posizione',
     sub: 'ETF, azione o asset manuale',
+    resource: 'positions' as ResourceType,
   },
 ]
 
@@ -27,9 +32,20 @@ const RECURRING_OPTION = {
   kind: 'recurring' as const,
   label: 'Entrata ricorrente',
   sub: 'Stipendio, affitto, abbonamento',
+  resource: null as ResourceType | null,
 }
 
-function SheetOption({ label, sub, onClick }: { label: string; sub: string; onClick: () => void }) {
+function SheetOption({
+  label,
+  sub,
+  locked,
+  onClick,
+}: {
+  label: string
+  sub: string
+  locked?: boolean
+  onClick: () => void
+}) {
   return (
     <button
       onClick={onClick}
@@ -42,7 +58,13 @@ function SheetOption({ label, sub, onClick }: { label: string; sub: string; onCl
         <p className="text-[14.5px] font-medium text-foreground tracking-[-0.1px]">{label}</p>
         <p className="text-[12px] text-muted-foreground mt-0.5">{sub}</p>
       </div>
-      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+      {locked ? (
+        <span className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground border border-white/[0.1] rounded px-1.5 py-0.5 shrink-0">
+          Pro
+        </span>
+      ) : (
+        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+      )}
     </button>
   )
 }
@@ -50,16 +72,29 @@ function SheetOption({ label, sub, onClick }: { label: string; sub: string; onCl
 export function AddItemSheet({
   variant = 'icon',
   accounts,
+  planLimits,
 }: {
   variant?: 'icon' | 'fab' | 'lime-cta'
   accounts?: AccountWithLatestSnapshot[]
+  planLimits?: PlanLimits
 }) {
   const [sheet, setSheet] = useState(false)
   const [adding, setAdding] = useState<AddKind>(null)
+  const [upgradeResource, setUpgradeResource] = useState<ResourceType | null>(null)
 
   const options = accounts ? [...BASE_OPTIONS, RECURRING_OPTION] : BASE_OPTIONS
 
-  function choose(kind: AddKind) {
+  function choose(kind: AddKind, resource: ResourceType | null) {
+    if (planLimits && resource) {
+      const current = resource === 'accounts'
+        ? planLimits.counts.accounts
+        : planLimits.counts.positions
+      if (isAtLimit(planLimits.plan, resource, current)) {
+        setSheet(false)
+        setTimeout(() => setUpgradeResource(resource), 200)
+        return
+      }
+    }
     setSheet(false)
     setTimeout(() => setAdding(kind), 200)
   }
@@ -97,15 +132,27 @@ export function AddItemSheet({
       <Dialog open={sheet} onOpenChange={setSheet}>
         <DialogContent showCloseButton={false} className="p-0 bg-popover border-border">
           <DialogTitle className="sr-only">Aggiungi elemento</DialogTitle>
-          {/* Sheet header */}
           <div className="px-6 pt-2 pb-3.5">
             <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-1">Nuovo</p>
             <p className="text-[20px] font-medium text-foreground tracking-[-0.4px]">Aggiungi al patrimonio</p>
           </div>
           <div className="pb-3">
-            {options.map(({ kind, label, sub }) => (
-              <SheetOption key={kind} label={label} sub={sub} onClick={() => choose(kind)} />
-            ))}
+            {options.map(({ kind, label, sub, resource }) => {
+              const locked = !!(planLimits && resource && isAtLimit(
+                planLimits.plan,
+                resource,
+                resource === 'accounts' ? planLimits.counts.accounts : planLimits.counts.positions
+              ))
+              return (
+                <SheetOption
+                  key={kind}
+                  label={label}
+                  sub={sub}
+                  locked={locked}
+                  onClick={() => choose(kind, resource ?? null)}
+                />
+              )
+            })}
           </div>
         </DialogContent>
       </Dialog>
@@ -114,6 +161,14 @@ export function AddItemSheet({
       <AddPositionDialog open={adding === 'position'}  onOpenChange={(o) => !o && setAdding(null)} />
       {accounts && (
         <AddRecurringIncomeDialog accounts={accounts} open={adding === 'recurring'} onOpenChange={(o) => !o && setAdding(null)} />
+      )}
+
+      {upgradeResource && (
+        <UpgradeModal
+          open={!!upgradeResource}
+          onOpenChange={(o) => !o && setUpgradeResource(null)}
+          resource={upgradeResource}
+        />
       )}
     </>
   )

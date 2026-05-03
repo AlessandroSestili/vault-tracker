@@ -3,9 +3,10 @@ import { liabilityBalance, subscriptionMonthlyAmount } from '@/lib/liability-cal
 import { LiabilitiesList } from '@/components/liabilities/LiabilitiesList'
 import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { LiabilitiesFab } from '@/components/liabilities/LiabilitiesFab'
+import { getPlanLimits } from '@/lib/plans'
 
 export default async function LiabilitiesPage() {
-  const liabilities = await fetchLiabilities()
+  const [liabilities, planLimits] = await Promise.all([fetchLiabilities(), getPlanLimits()])
 
   const debtsTotal = liabilities
     .filter(l => l.type === 'debt' && l.subtype !== 'subscription')
@@ -50,7 +51,7 @@ export default async function LiabilitiesPage() {
 
       </div>
     </div>
-    <LiabilitiesFab />
+    <LiabilitiesFab planLimits={planLimits} />
     </>
   )
 }

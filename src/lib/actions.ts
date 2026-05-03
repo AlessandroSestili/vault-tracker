@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { AccountType, LiabilitySubtype } from '@/types'
 import { DEBT_SUBTYPES } from '@/lib/account-config'
+import { assertNotAtLimit } from '@/lib/plans'
 
 function revalidateAll() {
   revalidatePath('/')
@@ -29,6 +30,7 @@ export async function createAccount(data: {
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
+  await assertNotAtLimit(supabase, userId, 'accounts')
   const { data: account, error } = await supabase
     .from('accounts')
     .insert({ name: data.name, type: data.type, currency: data.currency, image_url: data.imageUrl ?? null, user_id: userId })
@@ -92,6 +94,7 @@ export async function createPosition(data: {
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
+  await assertNotAtLimit(supabase, userId, 'positions')
   const { error } = await supabase.from('positions').insert({
     isin: data.isin,
     units: data.units,
@@ -141,6 +144,7 @@ export async function createManualPosition(data: {
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
+  await assertNotAtLimit(supabase, userId, 'positions')
   const { data: pos, error } = await supabase
     .from('positions')
     .insert({
@@ -213,6 +217,7 @@ export async function createLiability(data: {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
   const userId = await getUserId(supabase)
+  await assertNotAtLimit(supabase, userId, 'liabilities')
   const { error } = await supabase.from('liabilities').insert({
     name: data.name,
     type,

@@ -23,6 +23,7 @@ import {
   type DailyTotal, type SubdayTotalPoint,
 } from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
+import { getPlanLimits } from '@/lib/plans'
 
 export type { SubdayTotalPoint } from '@/lib/queries'
 
@@ -69,10 +70,11 @@ function aggregateSubday(
 export default async function HomePage() {
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
-  const [accounts, recurringIncomes, accountSnapshots, positionSnapshots] = await Promise.all([
+  const [accounts, recurringIncomes, accountSnapshots, positionSnapshots, planLimits] = await Promise.all([
     fetchAccounts(), fetchRecurringIncomes(),
     fetchAccountSnapshots(),
     backfillMissingHistory(allPositions, rates).then(() => fetchPositionSnapshots()),
+    getPlanLimits(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
@@ -177,7 +179,7 @@ export default async function HomePage() {
               <div className="flex items-center gap-1.5">
                 <RefreshButton />
                 <div className="hidden md:block">
-                  <AddItemSheet accounts={accounts} />
+                  <AddItemSheet accounts={accounts} planLimits={planLimits} />
                 </div>
               </div>
             </div>
@@ -197,7 +199,7 @@ export default async function HomePage() {
 
         </div>
       </div>
-      <MobileFab accounts={accounts} />
+      <MobileFab accounts={accounts} planLimits={planLimits} />
     </VisibilityProvider>
   )
 }
