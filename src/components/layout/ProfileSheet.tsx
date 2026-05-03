@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { LogOut, Moon, Sun, User, Mail, Bell, BellOff, CreditCard, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { UpgradeModal } from '@/components/ui/upgrade-modal'
@@ -191,23 +190,21 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
                 </div>
               </div>
               {isPro(plan) ? (
-                <Link
-                  href="/billing"
-                  onClick={() => setOpen(false)}
+                <button
+                  onClick={() => { setOpen(false); setTimeout(() => router.push('/billing'), 150) }}
                   className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground border border-border rounded px-2.5 py-1.5 hover:border-white/20 hover:text-foreground transition-colors"
                 >
                   Gestisci
-                </Link>
+                </button>
               ) : (
-                <Link
-                  href="/billing"
-                  onClick={() => setOpen(false)}
+                <button
+                  onClick={() => { setOpen(false); setTimeout(() => router.push('/billing'), 150) }}
                   className="flex items-center gap-1 font-mono text-[10px] tracking-[1px] uppercase rounded px-2.5 py-1.5 transition-colors"
                   style={{ background: '#a3e635', color: '#09090b' }}
                 >
                   <Zap className="w-3 h-3" strokeWidth={2} />
                   Pro
-                </Link>
+                </button>
               )}
             </div>
           </div>
