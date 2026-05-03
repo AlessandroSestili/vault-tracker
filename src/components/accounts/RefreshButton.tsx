@@ -13,7 +13,7 @@ export function RefreshButton() {
       onClick={() => startTransition(() => router.refresh())}
       disabled={isPending}
       title="Aggiorna prezzi"
-      className="w-7 h-7 flex items-center justify-center rounded-full text-[#71717a] hover:text-[#fafafa] transition-colors disabled:opacity-40"
+      className="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
     >
       <RefreshCw className={`w-3.5 h-3.5 ${isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
     </button>

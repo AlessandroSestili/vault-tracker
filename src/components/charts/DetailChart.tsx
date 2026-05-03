@@ -229,7 +229,7 @@ export function DetailChart({
           <span className="font-mono text-[12.5px] tabular-nums tracking-[-0.2px]" style={{ color: deltaColor }}>
             {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
           </span>
-          <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
+          <span className="font-mono text-[10.5px] text-muted-foreground tracking-[0.3px]">
             · {PERIOD_LABEL[period]}{!isSubday && !useVault ? ' · Yahoo' : ''}
           </span>
         </div>
@@ -461,8 +461,8 @@ function PeriodSelector({
               className="rounded-full font-mono text-[11px] tracking-[0.4px] transition-all"
               style={{
                 padding: '6px 12px',
-                background: active ? '#fafafa' : 'transparent',
-                color: active ? '#09090b' : '#a1a1aa',
+                background: active ? 'var(--foreground)' : 'transparent',
+                color: active ? 'var(--background)' : 'var(--secondary-foreground)',
                 fontWeight: active ? 600 : 500,
               }}
             >

@@ -175,7 +175,7 @@ function Satellite({
       >
         <div className="flex flex-col items-center gap-0.5 whitespace-nowrap">
           <div
-            className="font-mono text-[10px] tracking-[-0.2px] text-[#fafafa] px-1.5 py-0.5 rounded-md"
+            className="font-mono text-[10px] tracking-[-0.2px] text-foreground px-1.5 py-0.5 rounded-md"
             style={{
               background: 'rgba(9,9,11,0.72)',
               backdropFilter: 'blur(6px)',
@@ -494,7 +494,7 @@ export function OrbitChart3D({ rings, total }: { rings: OrbitRing[]; total: numb
           <p className="font-mono text-[9.5px] md:text-[10.5px] uppercase tracking-[2.5px] text-muted-foreground mb-1">
             Patrimonio netto
           </p>
-          <p className="text-[26px] md:text-[34px] font-medium text-[#fafafa] tabular-nums tracking-[-0.8px] leading-none">
+          <p className="font-mono text-[26px] md:text-[34px] font-medium text-foreground tabular-nums tracking-[-0.8px] leading-none">
             {formatCurrency(total)}
           </p>
         </div>

@@ -107,7 +107,7 @@ export default async function InsightsPage() {
       <div className="pt-2 md:pt-8 pb-6">
         <div className="flex items-center gap-2 mb-1">
           <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">Orbit</p>
-          <span className="font-mono text-[9px] tracking-[1px] uppercase px-1.5 py-0.5 rounded border border-[#f59e0b]/40 text-[#f59e0b] bg-[#f59e0b]/08">
+          <span className="font-mono text-[9px] tracking-[1px] uppercase px-1.5 py-0.5 rounded border border-white/[0.10] text-muted-foreground bg-white/[0.03]">
             Beta
           </span>
         </div>

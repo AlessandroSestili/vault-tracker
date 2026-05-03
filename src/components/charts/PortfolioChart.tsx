@@ -195,7 +195,7 @@ export function PortfolioChart({
           <span className="font-mono text-[12.5px] tabular-nums tracking-[-0.2px]" style={{ color: totalColor }}>
             {positive ? '+' : '−'}{formatCurrency(Math.abs(delta))} · {positive ? '+' : '−'}{Math.abs(deltaPct).toFixed(2)}%
           </span>
-          <span className="font-mono text-[10.5px] text-[#71717a] tracking-[0.3px]">
+          <span className="font-mono text-[10.5px] text-muted-foreground tracking-[0.3px]">
             · {PERIOD_LABEL[period]}{!isSubday && showPositionsLabel ? ' · posizioni' : ''}
           </span>
         </div>
@@ -204,19 +204,19 @@ export function PortfolioChart({
       {data.length === 0 ? (
         <div className="h-[160px] md:h-[220px] flex flex-col items-center justify-center gap-4">
           <div className="text-center">
-            <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessun asset ancora</p>
-            <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi un conto, posizione o debito per iniziare</p>
+            <p className="text-[15px] font-medium text-foreground tracking-[-0.2px] mb-1">Nessun asset ancora</p>
+            <p className="font-mono text-[11px] text-muted-foreground/70 tracking-[0.2px]">Aggiungi un conto, posizione o debito per iniziare</p>
           </div>
           <div className="hidden md:flex">
             <AddItemSheet variant="lime-cta" />
           </div>
         </div>
       ) : isSubday && subdayPoints.length < 2 ? (
-        <div className="h-[100px] md:h-[200px] flex items-center justify-center text-[#71717a] text-sm font-mono">
+        <div className="h-[100px] md:h-[200px] flex items-center justify-center text-muted-foreground text-sm font-mono">
           {period === '1D' ? 'Nessun dato per oggi' : 'Nessun dato per questo periodo'}
         </div>
       ) : !isSubday && !hasData ? (
-        <div className="h-[100px] md:h-[200px] flex items-center justify-center text-[#71717a] text-sm font-mono">
+        <div className="h-[100px] md:h-[200px] flex items-center justify-center text-muted-foreground text-sm font-mono">
           Nessun dato per questo periodo
         </div>
       ) : isSubday ? (
@@ -267,10 +267,10 @@ export function PortfolioChart({
                   const d = payload[0].payload as SubdayTotalPoint
                   return (
                     <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
-                      <p className="font-mono text-[10px] text-[#71717a] mb-1">
+                      <p className="font-mono text-[10px] text-muted-foreground mb-1">
                         {formatSubdayTs(d.ts, period as '1D' | '1S' | '1M')}
                       </p>
-                      <p className="font-mono font-medium text-[#fafafa] tabular-nums text-[13px]">
+                      <p className="font-mono font-medium text-foreground tabular-nums text-[13px]">
                         {formatCurrency(d.total)}
                       </p>
                     </div>
@@ -355,13 +355,13 @@ export function PortfolioChart({
                   const d = payload[0].payload as EnrichedPoint
                   return (
                     <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
-                      <p className="font-mono text-[10px] text-[#71717a] mb-1">{formatAxisDate(d.day, period)}</p>
+                      <p className="font-mono text-[10px] text-muted-foreground mb-1">{formatAxisDate(d.day, period)}</p>
                       {d.total != null ? (
-                        <p className="font-mono font-medium text-[#fafafa] tabular-nums text-[13px] mb-1">
+                        <p className="font-mono font-medium text-foreground tabular-nums text-[13px] mb-1">
                           {formatCurrency(d.total)}
                         </p>
                       ) : (
-                        <p className="font-mono text-[10px] text-[#52525b] italic mb-1">Pre-Vault · solo posizioni</p>
+                        <p className="font-mono text-[10px] text-muted-foreground/70 italic mb-1">Pre-Vault · solo posizioni</p>
                       )}
                       <div className="flex flex-col gap-0.5">
                         {d.accounts != null && (
@@ -473,8 +473,8 @@ export function PortfolioChart({
                 className="rounded-full font-mono text-[11px] tracking-[0.4px] transition-all"
                 style={{
                   padding: '6px 12px',
-                  background: active ? '#fafafa' : 'transparent',
-                  color: active ? '#09090b' : '#a1a1aa',
+                  background: active ? 'var(--foreground)' : 'transparent',
+                  color: active ? 'var(--background)' : 'var(--secondary-foreground)',
                   fontWeight: active ? 600 : 500,
                 }}
               >

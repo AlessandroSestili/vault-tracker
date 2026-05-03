@@ -178,7 +178,7 @@ export function AccountsList({
 
   if (isEmpty) {
     return (
-      <div className="text-center py-8 font-mono text-[12px] text-[#52525b] tracking-[0.4px]">
+      <div className="text-center py-8 font-mono text-[12px] text-muted-foreground/70 tracking-[0.4px]">
         Nessun asset ancora.
       </div>
     )
@@ -216,8 +216,8 @@ export function AccountsList({
               <div key={`acc-${a.id}`} className={rowClass} onClick={() => openSheet({ kind: 'account', data: a })}>
                 <LogoAvatar name={a.name} catColor={CAT_DOT[catKey]} customImageUrl={a.image_url} />
                 <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{a.name}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
+                  <p className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{a.name}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">{ACCOUNT_TYPE_CONFIG[a.type].label}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <DeskLink href={`/account/${a.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
@@ -226,8 +226,8 @@ export function AccountsList({
                   <DeskBtn onClick={() => setModal({ kind: 'delete-account', data: a })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
                 <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(a.latest_value, a.currency)}</p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">—</p>
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(a.latest_value, a.currency)}</p>
+                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">—</p>
                 </div>
               </div>
             )
@@ -263,18 +263,18 @@ export function AccountsList({
               const label = p.display_name ?? p.isin ?? ''
               const pctColor = p.changePercent !== undefined
                 ? (p.changePercent >= 0 ? 'text-[var(--primary)]' : 'text-[#ef4444]')
-                : 'text-[#71717a]'
+                : 'text-muted-foreground'
               return (
                 <div key={`lp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'live-position', data: p })}>
                   <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
                   <div className="flex-1 min-w-0 ml-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</span>
+                      <span className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{label}</span>
                       <span className="font-mono text-[9px] tracking-[0.8px] uppercase text-[var(--primary)] border border-[var(--primary)] rounded-[3px] px-[5px] py-[2px] leading-none opacity-80 shrink-0">
                         live
                       </span>
                     </div>
-                    <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                    <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                       {p.broker && <span>{p.broker} · </span>}
                       <span className="font-mono">{p.isin}</span>
                     </p>
@@ -292,7 +292,7 @@ export function AccountsList({
                     <DeskBtn onClick={() => setModal({ kind: 'delete-live', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                   </div>
                   <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                    <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.value, 'EUR')}</p>
+                    <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(p.value, 'EUR')}</p>
                     <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
                       {p.changePercent !== undefined
                         ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
@@ -309,8 +309,8 @@ export function AccountsList({
               <div key={`mp-${p.id}`} className={rowClass} onClick={() => openSheet({ kind: 'manual-position', data: p })}>
                 <LogoAvatar name={p.broker || label} catColor={CAT_DOT.invest} customImageUrl={p.image_url} />
                 <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{label}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5">{p.broker || 'Manuale'}</p>
+                  <p className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{label}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">{p.broker || 'Manuale'}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <DeskLink href={`/position/${p.id}`}><Info className="w-3.5 h-3.5" /></DeskLink>
@@ -318,8 +318,8 @@ export function AccountsList({
                   <DeskBtn onClick={() => setModal({ kind: 'delete-manual', data: p })} danger><Trash2 className="w-3.5 h-3.5" /></DeskBtn>
                 </div>
                 <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
-                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa]">{formatCurrency(p.current_value_eur, 'EUR')}</p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">manuale</p>
+                  <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(p.current_value_eur, 'EUR')}</p>
+                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">manuale</p>
                 </div>
               </div>
             )
@@ -346,11 +346,11 @@ export function AccountsList({
                 <LogoAvatar name={income.name} catColor={CAT_DOT.credit} />
                 <div className="flex-1 min-w-0 ml-3">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{income.name}</span>
+                    <span className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{income.name}</span>
                     {isToday && <span className="font-mono text-[9px] tracking-[1px] text-[var(--primary)]">OGGI</span>}
                     {isFuture && <span className="font-mono text-[9px] tracking-[0.5px] text-muted-foreground">previsto</span>}
                   </div>
-                  <p className="font-mono text-[12px] text-[#71717a] mt-0.5">giorno {income.day_of_month}</p>
+                  <p className="font-mono text-[12px] text-muted-foreground mt-0.5">giorno {income.day_of_month}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-1">
                   {isToday && (

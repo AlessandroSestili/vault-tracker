@@ -38,7 +38,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div>
-        <p className="text-[36px] font-medium tabular-nums tracking-[-1.5px] text-foreground leading-none">
+        <p className="font-mono text-[36px] font-medium tabular-nums tracking-[-1.5px] text-foreground leading-none">
           {formatCurrency(current, account.currency)}
         </p>
         {first > 0 && (

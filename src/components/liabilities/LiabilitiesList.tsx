@@ -135,7 +135,7 @@ export function LiabilitiesList({
 
   if (liabilities.length === 0) {
     return (
-      <div className="text-center py-12 font-mono text-[12px] text-[#52525b] tracking-[0.4px]">
+      <div className="text-center py-12 font-mono text-[12px] text-muted-foreground/70 tracking-[0.4px]">
         Nessun debito, credito o abbonamento.
       </div>
     )
@@ -202,8 +202,8 @@ export function LiabilitiesList({
               <div key={l.id} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
                 <LogoAvatar name={l.name} catColor="#ef4444" customImageUrl={l.image_url} />
                 <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                  <p className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{l.name}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                     {SUBTYPE_LABEL[l.subtype]}
                     {l.counterparty && ` · ${l.counterparty}`}
                   </p>
@@ -217,7 +217,7 @@ export function LiabilitiesList({
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#ef4444]">
                     −{formatCurrency(balance, l.currency)}
                   </p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">
+                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">
                     {info ?? 'debito'}
                   </p>
                 </div>
@@ -245,8 +245,8 @@ export function LiabilitiesList({
               <div key={l.id} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
                 <LogoAvatar name={l.name} catColor="oklch(0.82 0.18 130)" customImageUrl={l.image_url} />
                 <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                  <p className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{l.name}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                     {SUBTYPE_LABEL[l.subtype]}
                     {l.counterparty && ` · ${l.counterparty}`}
                     {l.due_date && ` · scade ${formatDate(l.due_date)}`}
@@ -261,7 +261,7 @@ export function LiabilitiesList({
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[var(--primary)]">
                     +{formatCurrency(balance, l.currency)}
                   </p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">
+                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">
                     {info ?? 'credito'}
                   </p>
                 </div>
@@ -289,8 +289,8 @@ export function LiabilitiesList({
               <div key={l.id} className={rowClass} onClick={() => openSheet({ kind: 'liability', data: l })}>
                 <LogoAvatar name={l.name} catColor="oklch(0.72 0.02 260)" customImageUrl={l.image_url} />
                 <div className="flex-1 min-w-0 ml-3">
-                  <p className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{l.name}</p>
-                  <p className="text-[12px] text-[#71717a] mt-0.5 truncate">
+                  <p className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{l.name}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                     {cycleLabel}
                     {l.counterparty && ` · ${l.counterparty}`}
                     {l.day_of_month && ` · giorno ${l.day_of_month}`}
@@ -305,7 +305,7 @@ export function LiabilitiesList({
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">
                     {formatCurrency(l.amount, l.currency)}
                   </p>
-                  <p className="font-mono text-[10.5px] text-[#71717a] mt-0.5">
+                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">
                     {formatCurrency(monthlyAmt)}/mese
                   </p>
                 </div>

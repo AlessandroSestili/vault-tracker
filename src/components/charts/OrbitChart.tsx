@@ -157,11 +157,11 @@ export function OrbitChart({ slices, total }: { slices: Slice[]; total: number }
           <div key={s.type} className="flex items-center justify-between py-3 border-b border-white/[0.04]">
             <div className="flex items-center gap-2.5">
               <div className="w-2 h-2 rounded-[2px] shrink-0" style={{ backgroundColor: s.color }} />
-              <span className="text-[13.5px] font-medium text-[#fafafa] tracking-[-0.1px]">{s.label}</span>
+              <span className="text-[13.5px] font-medium text-foreground tracking-[-0.1px]">{s.label}</span>
             </div>
             <div className="text-right">
-              <span className="font-mono text-[13px] tabular-nums text-[#fafafa]">{formatCurrency(s.value)}</span>
-              <span className="font-mono text-[11px] text-[#71717a] ml-2">{s.pct.toFixed(1)}%</span>
+              <span className="font-mono text-[13px] tabular-nums text-foreground">{formatCurrency(s.value)}</span>
+              <span className="font-mono text-[11px] text-muted-foreground ml-2">{s.pct.toFixed(1)}%</span>
             </div>
           </div>
         ))}

@@ -70,8 +70,8 @@ export default async function AnalyticsPage() {
         <div className="w-full md:space-y-8">
           {/* Header */}
           <div className="pt-2 pb-6 md:px-0">
-            <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-2">Analytics</p>
-            <p className="text-[26px] font-medium text-[#fafafa] tracking-[-0.6px] leading-[1.1]">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-2">Analytics</p>
+            <p className="text-[26px] font-medium text-foreground tracking-[-0.6px] leading-[1.1]">
               Allocazione patrimonio
             </p>
           </div>
@@ -85,8 +85,8 @@ export default async function AnalyticsPage() {
         {/* Right: asset list */}
         <div className="w-full space-y-3 md:sticky md:top-20">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a]">
-              Dettaglio asset <span className="text-[#52525b] ml-1.5">{allItems.length}</span>
+            <span className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">
+              Dettaglio asset <span className="text-muted-foreground/70 ml-1.5">{allItems.length}</span>
             </span>
             <div className="flex items-center gap-1.5">
               <RefreshButton />

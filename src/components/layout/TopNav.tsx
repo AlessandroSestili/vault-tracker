@@ -18,7 +18,7 @@ export function TopNav() {
         href={href}
         className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
           active
-            ? 'text-foreground bg-white/8'
+            ? 'text-primary'
             : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
         }`}
       >
@@ -38,7 +38,7 @@ export function TopNav() {
         <div className="flex md:hidden items-center w-full">
           <div className="flex items-center gap-2 flex-1">
             <VaultIcon size={18} />
-            <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
+            <span className="text-[15px] font-medium tracking-[-0.2px] text-foreground">Vault</span>
           </div>
           <div className="flex items-center gap-2">
             <ProfileSheet variant="mobile" />
@@ -49,7 +49,7 @@ export function TopNav() {
         <div className="hidden md:flex flex-1 items-center">
           <div className="flex items-center gap-2">
             <VaultIcon size={18} />
-            <span className="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Vault</span>
+            <span className="text-[15px] font-medium tracking-[-0.2px] text-foreground">Vault</span>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-1">

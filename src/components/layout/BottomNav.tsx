@@ -31,8 +31,7 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className="flex flex-1 flex-col items-center justify-center gap-1 transition-colors"
-              style={{ color: active ? '#fafafa' : '#71717a' }}
+              className={`flex flex-1 flex-col items-center justify-center gap-1 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <Icon
                 className="w-[19px] h-[19px]"

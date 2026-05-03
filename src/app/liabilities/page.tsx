@@ -26,11 +26,11 @@ export default async function LiabilitiesPage() {
 
         {/* Header */}
         <div className="pt-2 md:pt-8 pb-6 md:px-0">
-          <p className="font-mono text-[10px] tracking-[2px] uppercase text-[#71717a] mb-2">
+          <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-2">
             Esposizione
           </p>
           <div className="flex items-center justify-between">
-            <p className="text-[26px] font-medium text-[#fafafa] tracking-[-0.6px] leading-[1.1]">
+            <p className="text-[26px] font-medium text-foreground tracking-[-0.6px] leading-[1.1]">
               Debiti & Crediti
             </p>
             <div className="hidden md:block">

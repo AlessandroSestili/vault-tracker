@@ -109,8 +109,8 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-72">
         <div className="text-center">
-          <p className="text-[15px] font-medium text-[#fafafa] tracking-[-0.2px] mb-1">Nessuna allocazione</p>
-          <p className="font-mono text-[11px] text-[#52525b] tracking-[0.2px]">Aggiungi asset per visualizzare la distribuzione</p>
+          <p className="text-[15px] font-medium text-foreground tracking-[-0.2px] mb-1">Nessuna allocazione</p>
+          <p className="font-mono text-[11px] text-muted-foreground/70 tracking-[0.2px]">Aggiungi asset per visualizzare la distribuzione</p>
         </div>
         <div className="hidden md:flex">
           <AddItemSheet variant="lime-cta" />
@@ -147,13 +147,13 @@ export function AllocationChart({ slices: allSlices }: { slices: Slice[] }) {
                   className="w-2 h-2 rounded-[2px] shrink-0"
                   style={{ backgroundColor: s.color }}
                 />
-                <span className="text-[14px] font-medium text-[#fafafa] tracking-[-0.1px] truncate">{s.label}</span>
+                <span className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{s.label}</span>
               </div>
               <div className="text-right shrink-0 ml-2">
-                <span className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-[#fafafa] whitespace-nowrap">
+                <span className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground whitespace-nowrap">
                   {formatCurrency(s.value)}
                 </span>
-                <span className="font-mono text-[11px] text-[#71717a] ml-2 tabular-nums">
+                <span className="font-mono text-[11px] text-muted-foreground ml-2 tabular-nums">
                   {s.pct.toFixed(1)}%
                 </span>
               </div>
