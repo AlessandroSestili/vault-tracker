@@ -6,8 +6,8 @@ import { Wallet, BarChart2, CreditCard } from 'lucide-react'
 
 const tabs = [
   { href: '/',            label: 'Portafoglio', Icon: Wallet },
-  { href: '/analytics',   label: 'Analytics',   Icon: BarChart2 },
   { href: '/liabilities', label: 'Debiti',      Icon: CreditCard },
+  { href: '/analytics',   label: 'Analytics',   Icon: BarChart2 },
 ]
 
 export function BottomNav() {

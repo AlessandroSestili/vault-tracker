@@ -1,109 +1,137 @@
-import { AllocationChart } from '@/components/charts/AllocationChart'
-import { RAINBOW } from '@/lib/chart-palette'
-import { RefreshButton } from '@/components/accounts/RefreshButton'
-import { AccountsList } from '@/components/accounts/AccountsList'
-import { AddItemSheet } from '@/components/accounts/AddItemSheet'
-import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
-import type { AccountType } from '@/types'
+import { formatCurrency } from '@/lib/formats'
 import { fetchExchangeRates } from '@/lib/yahoo-finance'
-import { fetchAccounts, fetchPositions, mapPositionsWithQuotes } from '@/lib/queries'
-import type { Slice } from '@/components/charts/AllocationChart'
+import {
+  fetchAccounts, fetchPositions, mapPositionsWithQuotes,
+  fetchAccountSnapshots, fetchPositionSnapshots,
+} from '@/lib/queries'
+import {
+  computeCategoryAllocation, computeMonthlyCategoryTotals, computeCategoryPerf,
+} from '@/lib/analytics'
+import { CategoryDonut } from '@/components/charts/CategoryDonut'
+import { AllocationHistoryChart } from '@/components/charts/AllocationHistoryChart'
+import type { CategoryPerf } from '@/lib/analytics'
+
+function DeltaBadge({ deltaPct, deltaEur }: { deltaPct: number | null; deltaEur: number }) {
+  if (deltaPct === null) return <span className="font-mono text-[11px] text-muted-foreground/50">—</span>
+  const positive = deltaEur >= 0
+  const color = positive ? '#a3e635' : '#f87171'
+  const sign = positive ? '+' : ''
+  return (
+    <span className="font-mono text-[11px] tabular-nums" style={{ color }}>
+      {sign}{deltaPct.toFixed(1)}%
+    </span>
+  )
+}
+
+function PerfTable({ perf }: { perf: CategoryPerf[] }) {
+  return (
+    <div className="border-t border-white/[0.06]">
+      {perf.map(p => (
+        <div key={p.key} className="flex items-center py-3.5 border-b border-white/[0.04]">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="w-2 h-2 rounded-[2px] shrink-0" style={{ backgroundColor: p.color }} />
+            <span className="text-[13.5px] font-medium text-foreground truncate">{p.label}</span>
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
+            <span className="hidden md:block font-mono text-[12px] tabular-nums text-muted-foreground">
+              {p.deltaEur >= 0 ? '+' : ''}{formatCurrency(p.deltaEur)}
+            </span>
+            <DeltaBadge deltaPct={p.deltaPct} deltaEur={p.deltaEur} />
+            <span className="font-mono text-[13px] tabular-nums text-foreground w-24 text-right">
+              {formatCurrency(p.value)}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default async function AnalyticsPage() {
-  const [accounts, allPositions, rates] = await Promise.all([
+  const [accounts, allPositions, rates, accountSnapshots, positionSnapshots] = await Promise.all([
     fetchAccounts(), fetchPositions(), fetchExchangeRates(),
+    fetchAccountSnapshots(), fetchPositionSnapshots(),
   ])
 
-  const livePositions = allPositions.filter((p) => !p.is_manual)
-  const manualPositions = allPositions.filter((p) => p.is_manual)
-
+  const livePositions = allPositions.filter(p => !p.is_manual)
+  const manualPositions = allPositions.filter(p => p.is_manual)
   const positionsWithQuotes = await mapPositionsWithQuotes(livePositions, rates)
 
-  // Build one slice per individual asset (not grouped by type) for richer colors.
-  type RawAsset = { id: string; type: AccountType; label: string; value: number }
-  const raw: RawAsset[] = []
+  const allocation = computeCategoryAllocation(accounts, positionsWithQuotes, manualPositions)
+  const buckets = computeMonthlyCategoryTotals(accounts, accountSnapshots, positionSnapshots)
+  const perf = computeCategoryPerf(buckets, allocation)
 
-  for (const a of accounts) {
-    const v = a.latest_value ?? 0
-    if (v > 0) raw.push({ id: `a-${a.id}`, type: a.type as AccountType, label: a.name, value: v })
-  }
-  for (const p of positionsWithQuotes) {
-    if (p.value > 0) raw.push({
-      id: `p-${p.id}`,
-      type: 'investment',
-      label: p.display_name ?? p.isin ?? 'Posizione',
-      value: p.value,
-    })
-  }
-  for (const p of manualPositions) {
-    const v = p.current_value_eur ?? 0
-    if (v > 0) raw.push({
-      id: `m-${p.id}`,
-      type: 'investment',
-      label: p.display_name ?? 'Asset',
-      value: v,
-    })
-  }
-
-  const sliceTotal = raw.reduce((s, x) => s + x.value, 0)
-
-  // Sort by value desc so dominant slices get most saturated colors first.
-  const sorted = [...raw].sort((a, b) => b.value - a.value)
-
-  const slices: Slice[] = sorted.map((asset, i) => ({
-    id: asset.id,
-    type: asset.type,
-    label: asset.label,
-    value: asset.value,
-    color: RAINBOW[i % RAINBOW.length],
-    pct: sliceTotal > 0 ? (asset.value / sliceTotal) * 100 : 0,
-  }))
-
-  const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions]
+  const total = allocation.reduce((s, c) => s + c.value, 0)
+  const assetCount =
+    accounts.filter(a => (a.latest_value ?? 0) > 0).length +
+    positionsWithQuotes.length +
+    manualPositions.filter(p => (p.current_value_eur ?? 0) > 0).length
+  const activeCategories = allocation.length
 
   return (
-    <VisibilityProvider>
-    <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
-      <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
+    <div className="max-w-[680px] mx-auto px-5 pb-bottom-nav py-8 md:py-12 md:pb-12">
 
-        {/* Left: header + chart */}
-        <div className="w-full md:space-y-8">
-          {/* Header */}
-          <div className="pt-2 pb-6 md:px-0">
-            <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-2">Analytics</p>
-            <p className="text-[26px] font-medium text-foreground tracking-[-0.6px] leading-[1.1]">
-              Allocazione patrimonio
-            </p>
-          </div>
-
-          {/* Donut + legend */}
-          <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-8">
-            <AllocationChart slices={slices} />
-          </div>
-        </div>
-
-        {/* Right: asset list */}
-        <div className="w-full space-y-3 md:sticky md:top-20">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">
-              Dettaglio asset <span className="text-muted-foreground/70 ml-1.5">{allItems.length}</span>
-            </span>
-            <div className="flex items-center gap-1.5">
-              <RefreshButton />
-              <AddItemSheet />
-            </div>
-          </div>
-          <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2">
-            <AccountsList
-              accounts={accounts}
-              positionsWithQuotes={positionsWithQuotes}
-              manualPositions={manualPositions}
-            />
-          </div>
-        </div>
-
+      {/* Header */}
+      <div className="mb-8">
+        <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-2">Analytics</p>
+        <h1 className="text-[26px] font-medium text-foreground tracking-[-0.6px] leading-[1.1]">
+          Analisi patrimonio
+        </h1>
       </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-3 gap-3 mb-10 pb-8 border-b border-white/[0.06]">
+        <div>
+          <p className="font-mono text-[9px] tracking-[1.8px] uppercase text-muted-foreground mb-1.5">Totale</p>
+          <p className="font-mono text-[16px] font-medium tabular-nums text-foreground">{formatCurrency(total)}</p>
+        </div>
+        <div>
+          <p className="font-mono text-[9px] tracking-[1.8px] uppercase text-muted-foreground mb-1.5">Asset</p>
+          <p className="font-mono text-[16px] font-medium tabular-nums text-foreground">{assetCount}</p>
+        </div>
+        <div>
+          <p className="font-mono text-[9px] tracking-[1.8px] uppercase text-muted-foreground mb-1.5">Categorie</p>
+          <p className="font-mono text-[16px] font-medium tabular-nums text-foreground">{activeCategories}</p>
+        </div>
+      </div>
+
+      {allocation.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <p className="text-[15px] font-medium text-foreground mb-1">Nessun dato</p>
+          <p className="font-mono text-[11px] text-muted-foreground/70 tracking-[0.2px]">
+            Aggiungi asset per visualizzare l&apos;analisi
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Allocazione */}
+          <section className="mb-10">
+            <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-6">Allocazione</p>
+            <CategoryDonut allocations={allocation} />
+          </section>
+
+          {/* Performance */}
+          <section className="mb-10">
+            <div className="flex items-baseline justify-between mb-1">
+              <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Performance</p>
+              {buckets.length >= 2 && (
+                <p className="font-mono text-[9px] text-muted-foreground/50">
+                  vs mese precedente
+                </p>
+              )}
+            </div>
+            <PerfTable perf={perf} />
+          </section>
+
+          {/* Nel tempo */}
+          {buckets.length >= 2 && (
+            <section className="mb-10">
+              <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-6">Nel tempo</p>
+              <AllocationHistoryChart buckets={buckets} />
+            </section>
+          )}
+        </>
+      )}
     </div>
-    </VisibilityProvider>
   )
 }
