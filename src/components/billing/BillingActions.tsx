@@ -70,28 +70,43 @@ export function CancelButton({ cancelAtPeriodEnd, periodEnd }: { cancelAtPeriodE
 
 export function PortalButton() {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handlePortal() {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/stripe/portal', { method: 'POST' })
-      const { url } = await res.json()
-      if (url) window.location.href = url
-    } finally { setLoading(false) }
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error ?? 'Errore sconosciuto')
+      }
+    } catch {
+      setError('Errore di rete. Riprova.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <button
-      onClick={handlePortal}
-      disabled={loading}
-      className="w-full flex items-center justify-between px-0 py-3.5 border-b border-white/[0.04] text-left group disabled:opacity-40"
-    >
-      <span className="font-mono text-[11px] tracking-[1px] uppercase text-muted-foreground group-hover:text-foreground transition-colors">
-        Metodo di pagamento
-      </span>
-      <span className="font-mono text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
-        {loading ? '…' : 'Gestisci →'}
-      </span>
-    </button>
+    <div>
+      <button
+        onClick={handlePortal}
+        disabled={loading}
+        className="w-full flex items-center justify-between px-0 py-3.5 border-b border-white/[0.04] text-left group disabled:opacity-40"
+      >
+        <span className="font-mono text-[11px] tracking-[1px] uppercase text-muted-foreground group-hover:text-foreground transition-colors">
+          Metodo di pagamento
+        </span>
+        <span className="font-mono text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
+          {loading ? '…' : 'Gestisci →'}
+        </span>
+      </button>
+      {error && (
+        <p className="mt-2 text-[11px] text-destructive font-mono">{error}</p>
+      )}
+    </div>
   )
 }

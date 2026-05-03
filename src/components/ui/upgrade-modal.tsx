@@ -29,17 +29,25 @@ export function UpgradeModal({
 }) {
   const [interval, setInterval] = useState<BillingInterval>('monthly')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleUpgrade() {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interval }),
       })
-      const { url } = await res.json()
-      if (url) window.location.href = url
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error ?? 'Errore sconosciuto')
+      }
+    } catch {
+      setError('Errore di rete. Riprova.')
     } finally {
       setLoading(false)
     }
@@ -109,6 +117,9 @@ export function UpgradeModal({
             {loading ? 'Attendere…' : 'Passa a Pro'}
           </button>
 
+          {error && (
+            <p className="text-center font-mono text-[10px] text-destructive mt-2">{error}</p>
+          )}
           <p className="text-center font-mono text-[10px] text-muted-foreground/50 mt-3">
             Annulla in qualsiasi momento
           </p>

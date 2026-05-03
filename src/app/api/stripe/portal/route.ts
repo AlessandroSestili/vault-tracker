@@ -19,10 +19,14 @@ export async function POST(req: NextRequest) {
 
   const origin = req.headers.get('origin') ?? 'https://vault-tracker-eight.vercel.app'
 
-  const session = await getStripe().billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: `${origin}/`,
-  })
-
-  return NextResponse.json({ url: session.url })
+  try {
+    const session = await getStripe().billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${origin}/`,
+    })
+    return NextResponse.json({ url: session.url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }

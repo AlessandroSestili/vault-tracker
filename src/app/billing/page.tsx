@@ -5,6 +5,7 @@ import { CancelButton, PortalButton } from '@/components/billing/BillingActions'
 import type Stripe from 'stripe'
 import { isPro } from '@/lib/plan-config'
 import type { Plan } from '@/lib/plan-config'
+import { syncSubscriptionIfNeeded } from '@/lib/stripe-sync'
 
 function fmt(ts: number) {
   return new Date(ts * 1000).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -27,6 +28,8 @@ export default async function BillingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+
+  await syncSubscriptionIfNeeded(user.id)
 
   const { data: profile } = await supabase
     .from('profiles')

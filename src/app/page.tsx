@@ -24,6 +24,8 @@ import {
 } from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
 import { getPlanLimits } from '@/lib/plans'
+import { syncSubscriptionIfNeeded } from '@/lib/stripe-sync'
+import { createClient } from '@/lib/supabase/server'
 
 export type { SubdayTotalPoint } from '@/lib/queries'
 
@@ -67,7 +69,14 @@ function aggregateSubday(
   })
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ upgraded?: string }> }) {
+  const sp = await searchParams
+  if (sp.upgraded === 'true') {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) await syncSubscriptionIfNeeded(user.id)
+  }
+
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
   const [accounts, recurringIncomes, accountSnapshots, positionSnapshots, planLimits] = await Promise.all([
