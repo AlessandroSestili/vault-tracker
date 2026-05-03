@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LogOut, Moon, Sun, User, Mail, Bell, BellOff } from 'lucide-react'
+import { LogOut, Moon, Sun, User, Mail, Bell, BellOff, CreditCard, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { UpgradeModal } from '@/components/ui/upgrade-modal'
+import type { Plan } from '@/lib/plan-config'
+import { isPro } from '@/lib/plan-config'
 
 type Theme = 'dark' | 'light' | 'system'
 
@@ -60,6 +63,32 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
   }
 
   const initials = email ? email.slice(0, 2).toUpperCase() : 'V'
+
+  const [plan, setPlan] = useState<Plan>('free')
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    createClient()
+      .from('profiles')
+      .select('plan')
+      .single()
+      .then(({ data }) => {
+        if (data?.plan) setPlan(data.plan as Plan)
+      })
+  }, [open])
+
+  async function handlePortal() {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' })
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } finally {
+      setPortalLoading(false)
+    }
+  }
 
   const [notifStatus, setNotifStatus] = useState<'unsupported' | 'denied' | 'subscribed' | 'unsubscribed'>('unsupported')
 
@@ -155,6 +184,44 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
             </div>
           </div>
 
+          {/* Piano */}
+          <div className="px-6 py-4 border-b border-border">
+            <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground mb-3">Piano</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-muted/40 border border-border flex items-center justify-center">
+                  <CreditCard className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-foreground">
+                    {isPro(plan) ? 'Vault Pro' : 'Vault Free'}
+                  </p>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+                    {isPro(plan) ? 'Illimitato' : '3 account · 5 posizioni · 5 passività'}
+                  </p>
+                </div>
+              </div>
+              {isPro(plan) ? (
+                <button
+                  onClick={handlePortal}
+                  disabled={portalLoading}
+                  className="font-mono text-[10px] tracking-[1px] uppercase text-muted-foreground border border-border rounded px-2.5 py-1.5 hover:border-white/20 hover:text-foreground transition-colors disabled:opacity-40"
+                >
+                  {portalLoading ? '…' : 'Gestisci'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setUpgradeOpen(true)}
+                  className="flex items-center gap-1 font-mono text-[10px] tracking-[1px] uppercase rounded px-2.5 py-1.5 transition-colors"
+                  style={{ background: '#a3e635', color: '#09090b' }}
+                >
+                  <Zap className="w-3 h-3" strokeWidth={2} />
+                  Pro
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Notifiche */}
           {notifStatus !== 'unsupported' && (
             <div className="px-4 pt-1 pb-1">
@@ -190,6 +257,8 @@ export function ProfileSheet({ variant = 'mobile' }: { variant?: 'mobile' | 'des
           </div>
         </DialogContent>
       </Dialog>
+
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} resource="accounts" />
     </>
   )
 }
