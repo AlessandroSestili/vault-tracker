@@ -1,6 +1,7 @@
-import type { AccountType } from '@/types'
+import type { AccountType, Liability, LiabilitySubtype } from '@/types'
 import type { AccountWithLatestSnapshot, Position, PositionWithQuote } from '@/types'
 import type { AccountSnapshot, PositionSnapshot } from './queries'
+import { liabilityBalance, subscriptionMonthlyAmount } from './liability-calc'
 
 export type CategoryKey = 'cash' | 'invest' | 'pension' | 'crypto' | 'other'
 
@@ -130,6 +131,66 @@ export function computeMonthlyCategoryTotals(
 
     return { month, ...t, total: t.cash + t.invest + t.pension + t.crypto + t.other }
   })
+}
+
+export type LiabilityBreakdownItem = {
+  id: string
+  name: string
+  type: 'debt' | 'credit'
+  subtype: LiabilitySubtype
+  balance: number
+  currency: string
+  monthlyPayment: number | null
+}
+
+export type LiabilityAnalysis = {
+  totalDebt: number
+  totalCredit: number
+  netLiability: number
+  monthlyStructured: number
+  subscriptionsMonthly: number
+  totalMonthly: number
+  items: LiabilityBreakdownItem[]
+  debtToAsset: number | null
+}
+
+export function computeLiabilityAnalysis(liabilities: Liability[], totalAssets: number): LiabilityAnalysis {
+  const items: LiabilityBreakdownItem[] = liabilities
+    .filter(l => l.subtype !== 'subscription')
+    .map(l => ({
+      id: l.id,
+      name: l.name,
+      type: l.type,
+      subtype: l.subtype,
+      balance: liabilityBalance(l),
+      currency: l.currency,
+      monthlyPayment: l.monthly_payment,
+    }))
+    .sort((a, b) => b.balance - a.balance)
+
+  const totalDebt = items.filter(i => i.type === 'debt').reduce((s, i) => s + i.balance, 0)
+  const totalCredit = items.filter(i => i.type === 'credit').reduce((s, i) => s + i.balance, 0)
+
+  const monthlyStructured = liabilities
+    .filter(l => l.type === 'debt' && l.subtype !== 'subscription' && l.monthly_payment)
+    .reduce((s, l) => s + (l.monthly_payment ?? 0), 0)
+
+  const subscriptionsMonthly = liabilities
+    .filter(l => l.subtype === 'subscription')
+    .reduce((s, l) => s + subscriptionMonthlyAmount(l), 0)
+
+  const netLiability = totalDebt - totalCredit
+
+  return {
+    totalDebt,
+    totalCredit,
+    netLiability,
+    monthlyStructured,
+    subscriptionsMonthly,
+    totalMonthly: monthlyStructured + subscriptionsMonthly,
+    items,
+    debtToAsset: totalAssets > 0 ? (netLiability / totalAssets) * 100 : null,
+  }
 }
 
 export function computeCategoryPerf(
