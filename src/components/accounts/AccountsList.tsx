@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Pencil, Trash2, Info, ChevronDown, CheckCircle2, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Info, ChevronDown, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EditAccountDialog } from './EditAccountDialog'
@@ -80,7 +80,8 @@ function GroupHeader({
   totalColor,
   open,
   onToggle,
-  children,
+  showValues,
+  onVisibilityToggle,
 }: {
   label: string
   count: number
@@ -88,25 +89,32 @@ function GroupHeader({
   totalColor?: string
   open: boolean
   onToggle: () => void
-  children?: React.ReactNode
+  showValues?: boolean
+  onVisibilityToggle?: () => void
 }) {
   return (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between py-2.5 group"
-    >
-      <div className="flex items-center gap-2">
+    <div className="w-full flex items-center justify-between py-2.5">
+      <button onClick={onToggle} className="flex items-center gap-2 flex-1 text-left">
         <span className="font-mono text-[10px] tracking-[1.5px] uppercase text-muted-foreground">{label}</span>
         <span className="font-mono text-[10px] text-muted-foreground/50">{count}</span>
-        {children}
-      </div>
+      </button>
       <div className="flex items-center gap-2">
-        <span className={`font-mono text-[12px] tabular-nums font-medium ${totalColor ?? 'text-foreground/70'}`}>{total}</span>
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
-        />
+        {onVisibilityToggle && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onVisibilityToggle() }}
+            className="w-5 h-5 flex items-center justify-center text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors"
+          >
+            {showValues ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+          </button>
+        )}
+        <button onClick={onToggle} className="flex items-center gap-2">
+          <span className={`font-mono text-[12px] tabular-nums font-medium ${totalColor ?? 'text-foreground/70'}`}>{total}</span>
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
+          />
+        </button>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -194,22 +202,12 @@ export function AccountsList({
           <GroupHeader
             label="Conti"
             count={accounts.length}
-            total={showAccounts ? formatCurrency(contiTotal) : formatCurrency(0)}
+            total={showAccounts ? formatCurrency(contiTotal) : '•••'}
             open={openGroups.conti}
             onToggle={() => toggleGroup('conti')}
+            showValues={showAccounts}
+            onVisibilityToggle={() => setShowAccounts(!showAccounts)}
           />
-          {openGroups.conti && (
-            <div className="flex items-center gap-2 pb-2">
-              <button
-                onClick={() => setShowAccounts(!showAccounts)}
-                className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
-                  showAccounts ? 'text-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                {showAccounts ? 'Nascondi conti' : 'Mostra conti'}
-              </button>
-            </div>
-          )}
           {openGroups.conti && showAccounts && sortedAccounts.map((a) => {
             const catKey = ACCOUNT_TYPE_TO_CAT[a.type] ?? 'other'
             return (
@@ -227,7 +225,6 @@ export function AccountsList({
                 </div>
                 <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(a.latest_value, a.currency)}</p>
-                  <p className="font-mono text-[10.5px] text-muted-foreground mt-0.5">—</p>
                 </div>
               </div>
             )
@@ -241,22 +238,12 @@ export function AccountsList({
           <GroupHeader
             label="Posizioni"
             count={sortedPositions.length}
-            total={showPositions ? formatCurrency(posizioniTotal) : formatCurrency(0)}
+            total={showPositions ? formatCurrency(posizioniTotal) : '•••'}
             open={openGroups.posizioni}
             onToggle={() => toggleGroup('posizioni')}
+            showValues={showPositions}
+            onVisibilityToggle={() => setShowPositions(!showPositions)}
           />
-          {openGroups.posizioni && (
-            <div className="flex items-center gap-2 pb-2">
-              <button
-                onClick={() => setShowPositions(!showPositions)}
-                className={`px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] font-mono text-[10px] tracking-[0.5px] uppercase transition-colors ${
-                  showPositions ? 'text-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                {showPositions ? 'Nascondi posizioni' : 'Mostra posizioni'}
-              </button>
-            </div>
-          )}
           {openGroups.posizioni && showPositions && sortedPositions.map((item) => {
             if (item.kind === 'live') {
               const p = item.data
@@ -270,9 +257,7 @@ export function AccountsList({
                   <div className="flex-1 min-w-0 ml-3">
                     <div className="flex items-center gap-2">
                       <span className="text-[14px] font-medium text-foreground tracking-[-0.1px] truncate">{label}</span>
-                      <span className="font-mono text-[9px] tracking-[0.8px] uppercase text-[var(--primary)] border border-[var(--primary)] rounded-[3px] px-[5px] py-[2px] leading-none opacity-80 shrink-0">
-                        live
-                      </span>
+                      <span className="inline-block w-[5px] h-[5px] rounded-full shrink-0 mb-[1px]" style={{ backgroundColor: 'var(--primary)', opacity: 0.7 }} />
                     </div>
                     <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                       {p.broker && <span>{p.broker} · </span>}
@@ -293,11 +278,11 @@ export function AccountsList({
                   </div>
                   <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                     <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(p.value, 'EUR')}</p>
-                    <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
-                      {p.changePercent !== undefined
-                        ? `${p.changePercent >= 0 ? '+' : ''}${p.changePercent.toFixed(2)}%`
-                        : '—'}
-                    </p>
+                    {p.changePercent !== undefined && (
+                      <p className={`md:hidden font-mono text-[10.5px] tabular-nums mt-0.5 ${pctColor}`}>
+                        {p.changePercent >= 0 ? '+' : ''}{p.changePercent.toFixed(2)}%
+                      </p>
+                    )}
                   </div>
                 </div>
               )
