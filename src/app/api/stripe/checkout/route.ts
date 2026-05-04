@@ -25,14 +25,17 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    let customerId = profile?.stripe_customer_id
+    let customerId = profile?.stripe_customer_id ?? null
 
+    // Validate stored customer: deleted customers return { deleted: true } without throwing
     if (customerId) {
-      // Verify the customer still exists in the current Stripe environment
       try {
-        await stripe.customers.retrieve(customerId)
+        const existing = await stripe.customers.retrieve(customerId)
+        if ((existing as { deleted?: boolean }).deleted) customerId = null
       } catch {
         customerId = null
+      }
+      if (!customerId) {
         await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id)
       }
     }
@@ -43,24 +46,36 @@ export async function POST(req: NextRequest) {
         metadata: { userId: user.id },
       })
       customerId = customer.id
-
-      await supabase
-        .from('profiles')
-        .upsert({ id: user.id, stripe_customer_id: customerId })
+      await supabase.from('profiles').upsert({ id: user.id, stripe_customer_id: customerId })
     }
 
     const origin = req.headers.get('origin') ?? 'https://vault-tracker-eight.vercel.app'
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
+    const sessionParams = {
+      mode: 'subscription' as const,
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId: user.id },
       success_url: `${origin}/?upgraded=true`,
       cancel_url: `${origin}/`,
       allow_promotion_codes: true,
-      billing_address_collection: 'auto',
-    })
+      billing_address_collection: 'auto' as const,
+    }
+
+    let session
+    try {
+      session = await stripe.checkout.sessions.create({ customer: customerId, ...sessionParams })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('No such customer')) {
+        // Customer invalid despite our checks — clear and retry without it
+        await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id)
+        const fresh = await stripe.customers.create({ email: user.email, metadata: { userId: user.id } })
+        await supabase.from('profiles').update({ stripe_customer_id: fresh.id }).eq('id', user.id)
+        session = await stripe.checkout.sessions.create({ customer: fresh.id, ...sessionParams })
+      } else {
+        throw err
+      }
+    }
 
     return NextResponse.json({ url: session.url })
   } catch (err) {
