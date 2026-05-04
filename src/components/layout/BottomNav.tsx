@@ -16,12 +16,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-white/[0.06]"
+      className="bottom-nav w-full shrink-0 md:hidden border-t border-white/[0.06]"
       style={{
         background: 'rgba(9,9,11,0.86)',
         backdropFilter: 'blur(20px) saturate(160%)',
         WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       <div className="flex h-[4.5rem] items-stretch">

@@ -196,6 +196,17 @@
     padding-top: calc(3.5rem + env(safe-area-inset-top));
   }
   .pb-bottom-nav {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    padding-bottom: 1.5rem;
+  }
+
+  /* Safe-area padding for BottomNav only when running as installed PWA */
+  .bottom-nav {
+    padding-bottom: 0;
+  }
+
+  @media (display-mode: standalone) {
+    .bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
   }
 }
