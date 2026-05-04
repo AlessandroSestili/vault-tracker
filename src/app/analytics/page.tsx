@@ -169,7 +169,8 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* KPI strip — 2x2 on mobile, 4 cols on desktop */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5 mb-10 pb-8 border-b border-white/[0.06]">
+      <div className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-0">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-5 mb-0 md:mb-10 md:pb-8 md:border-b md:border-white/[0.06]">
         <div>
           <p className="font-mono text-[9px] tracking-[1.8px] uppercase text-muted-foreground mb-1.5">Asset lordi</p>
           <p className="font-mono text-[15px] font-medium tabular-nums text-foreground">{formatCurrency(grossAssets)}</p>
@@ -191,6 +192,7 @@ export default async function AnalyticsPage() {
           </p>
         </div>
       </div>
+      </div>
 
       {allocation.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -202,13 +204,13 @@ export default async function AnalyticsPage() {
       ) : (
         <>
           {/* Allocazione */}
-          <section className="mb-10">
+          <section className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-10">
             <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-6">Allocazione</p>
             <CategoryDonut allocations={allocation} />
           </section>
 
           {/* Performance */}
-          <section className="mb-10">
+          <section className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-10">
             <div className="flex items-baseline justify-between mb-1">
               <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Performance</p>
               {buckets.length >= 2 && (
@@ -220,14 +222,20 @@ export default async function AnalyticsPage() {
 
           {/* Nel tempo */}
           {buckets.length >= 2 && (
-            <section className="mb-10">
+            <section className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-10">
               <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-6">Nel tempo</p>
               <AllocationHistoryChart buckets={buckets} />
             </section>
           )}
 
           {/* Passività */}
-          <LiabilitySection analysis={liabAnalysis} />
+          {liabAnalysis.items.length > 0 || liabAnalysis.subscriptionsMonthly > 0 ? (
+            <div className="rounded-3xl bg-card border border-border p-5 md:rounded-none md:bg-transparent md:border-0 md:p-0">
+              <LiabilitySection analysis={liabAnalysis} />
+            </div>
+          ) : (
+            <LiabilitySection analysis={liabAnalysis} />
+          )}
         </>
       )}
     </div>

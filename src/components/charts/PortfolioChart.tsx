@@ -232,7 +232,7 @@ export function PortfolioChart({
             >
               <defs>
                 <linearGradient id="subdayTotalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={totalColor} stopOpacity={0.22} />
+                  <stop offset="0%" stopColor={totalColor} stopOpacity={0.3} />
                   <stop offset="100%" stopColor={totalColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -298,7 +298,7 @@ export function PortfolioChart({
                 type="monotone"
                 dataKey="total"
                 stroke={totalColor}
-                strokeWidth={1.5}
+                strokeWidth={2}
                 fill="url(#subdayTotalGrad)"
                 dot={false}
                 activeDot={{ r: 2.5, fill: totalColor, strokeWidth: 0 }}
@@ -321,7 +321,7 @@ export function PortfolioChart({
             >
               <defs>
                 <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={totalColor} stopOpacity={0.22} />
+                  <stop offset="0%" stopColor={totalColor} stopOpacity={0.3} />
                   <stop offset="100%" stopColor={totalColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -436,7 +436,7 @@ export function PortfolioChart({
                 type="monotone"
                 dataKey="total"
                 stroke={totalColor}
-                strokeWidth={1.5}
+                strokeWidth={2}
                 fill="url(#totalGrad)"
                 dot={false}
                 activeDot={{ r: 2.5, fill: totalColor, strokeWidth: 0 }}

@@ -29,19 +29,19 @@ export function CategoryDonut({ allocations }: { allocations: CategoryAllocation
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="relative w-full" style={{ height: 220 }}>
+      <div className="relative w-full" style={{ height: 140 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <Pie
               data={allocations}
               dataKey="value"
               cx="50%"
-              cy="50%"
-              innerRadius={62}
-              outerRadius={90}
+              cy="100%"
+              innerRadius={76}
+              outerRadius={110}
               paddingAngle={2}
-              startAngle={90}
-              endAngle={-270}
+              startAngle={180}
+              endAngle={0}
               strokeWidth={0}
             >
               {allocations.map(entry => (
@@ -51,8 +51,8 @@ export function CategoryDonut({ allocations }: { allocations: CategoryAllocation
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="font-mono text-[9px] uppercase tracking-[1.8px] text-muted-foreground mb-1">Totale</p>
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none whitespace-nowrap">
+          <p className="font-mono text-[9px] uppercase tracking-[1.8px] text-muted-foreground">Totale</p>
           <p className="font-mono text-[18px] font-medium tabular-nums text-foreground">{formatCurrency(total)}</p>
         </div>
       </div>
