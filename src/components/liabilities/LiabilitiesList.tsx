@@ -148,7 +148,8 @@ export function LiabilitiesList({
   return (
     <>
       {/* KPI strip */}
-      <div className="flex items-start gap-6 md:gap-10 mb-6 md:mb-8 font-mono flex-wrap">
+      <div className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-8">
+      <div className="flex items-start gap-6 md:gap-10 font-mono flex-wrap">
         {debtsTotal > 0 && (
           <div>
             <p className="text-[10px] tracking-[1.5px] uppercase text-muted-foreground mb-1.5">Debiti</p>
@@ -185,10 +186,11 @@ export function LiabilitiesList({
           </div>
         )}
       </div>
+      </div>
 
       {/* Debts group */}
       {debts.length > 0 && (
-        <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2 mb-4">
+        <div className="rounded-3xl bg-card border border-border px-3 py-2 mb-4">
           <GroupHeader
             label="Debiti"
             count={debts.length}
@@ -231,7 +233,7 @@ export function LiabilitiesList({
 
       {/* Credits group */}
       {credits.length > 0 && (
-        <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2">
+        <div className="rounded-3xl bg-card border border-border px-3 py-2">
           <GroupHeader
             label="Crediti"
             count={credits.length}
@@ -275,7 +277,7 @@ export function LiabilitiesList({
 
       {/* Subscriptions group */}
       {subscriptions.length > 0 && (
-        <div className="md:rounded-2xl md:bg-card md:border md:border-border md:px-3 md:py-2 mt-4">
+        <div className="rounded-3xl bg-card border border-border px-3 py-2 mt-4">
           <GroupHeader
             label="Abbonamenti"
             count={subscriptions.length}
