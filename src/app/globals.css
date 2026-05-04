@@ -196,7 +196,7 @@
     padding-top: calc(3.5rem + env(safe-area-inset-top));
   }
   .pb-bottom-nav {
-    padding-bottom: 1.5rem;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
 
 }

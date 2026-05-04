@@ -16,36 +16,38 @@ export function BottomNav() {
 
   return (
     <nav
-      className="bottom-nav w-full shrink-0 md:hidden border-t border-white/[0.06] rounded-t-2xl"
+      className="md:hidden fixed left-4 right-4 z-50"
       style={{
-        background: 'rgba(9,9,11,0.92)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)',
+        background: 'rgba(18,18,20,0.94)',
+        backdropFilter: 'blur(28px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+        borderRadius: '9999px',
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3)',
       }}
     >
-      <div className="flex h-[4.5rem] items-stretch">
+      <div className="flex h-16 items-center px-2 gap-1">
         {tabs.map(({ href, label, Icon }) => {
           const active = pathname === href
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}
+              className="flex flex-1 items-center justify-center"
             >
               <div
-                className="flex items-center justify-center w-11 h-7 rounded-full transition-colors"
-                style={{ background: active ? 'oklch(0.82 0.18 130 / 0.12)' : 'transparent' }}
+                className="flex flex-col items-center gap-0.5 px-4 py-2 rounded-full transition-all duration-200"
+                style={{
+                  background: active ? 'oklch(0.82 0.18 130 / 0.13)' : 'transparent',
+                  color: active ? 'oklch(0.82 0.18 130)' : '#71717a',
+                }}
               >
-                <Icon className="w-5 h-5" strokeWidth={active ? 1.8 : 1.3} />
+                <Icon className="w-[19px] h-[19px]" strokeWidth={active ? 1.8 : 1.3} />
+                <span className="text-[10px] leading-none" style={{ fontWeight: active ? 500 : 400 }}>
+                  {label}
+                </span>
               </div>
-              <span
-                className="text-[10.5px] tracking-[0.1px]"
-                style={{ fontWeight: active ? 500 : 400 }}
-              >
-                {label}
-              </span>
             </Link>
           )
         })}
