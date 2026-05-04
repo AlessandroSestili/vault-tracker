@@ -199,14 +199,4 @@
     padding-bottom: 1.5rem;
   }
 
-  /* Safe-area padding for BottomNav only when running as installed PWA */
-  .bottom-nav {
-    padding-bottom: 0;
-  }
-
-  @media (display-mode: standalone) {
-    .bottom-nav {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-  }
 }

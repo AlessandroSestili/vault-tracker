@@ -21,6 +21,7 @@ export function BottomNav() {
         background: 'rgba(9,9,11,0.86)',
         backdropFilter: 'blur(20px) saturate(160%)',
         WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       <div className="flex h-[4.5rem] items-stretch">

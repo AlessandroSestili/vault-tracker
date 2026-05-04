@@ -45,7 +45,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
-      <body className="h-dvh flex flex-col bg-background overflow-hidden">
+      <body className="flex flex-col bg-background overflow-hidden" style={{ height: 'calc(100dvh + env(safe-area-inset-bottom, 0px))' }}>
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('vault-theme');if(!t||t==='dark')return;var r=document.documentElement;r.classList.remove('dark');r.classList.add(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t);})()` }}
