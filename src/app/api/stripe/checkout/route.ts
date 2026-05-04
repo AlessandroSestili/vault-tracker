@@ -27,6 +27,16 @@ export async function POST(req: NextRequest) {
 
     let customerId = profile?.stripe_customer_id
 
+    if (customerId) {
+      // Verify the customer still exists in the current Stripe environment
+      try {
+        await stripe.customers.retrieve(customerId)
+      } catch {
+        customerId = null
+        await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id)
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
