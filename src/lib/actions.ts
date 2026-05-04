@@ -213,6 +213,7 @@ export async function createLiability(data: {
   dueDate?: string
   billingCycle?: string
   dayOfMonth?: number
+  linkedAccountId?: string | null
 }) {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
@@ -234,6 +235,7 @@ export async function createLiability(data: {
     due_date: data.dueDate ?? null,
     billing_cycle: data.billingCycle ?? null,
     day_of_month: data.dayOfMonth ?? null,
+    linked_account_id: data.linkedAccountId ?? null,
     user_id: userId,
   })
   if (error) throw new Error(error.message)
@@ -255,6 +257,7 @@ export async function updateLiability(id: string, data: {
   dueDate?: string
   billingCycle?: string
   dayOfMonth?: number
+  linkedAccountId?: string | null
 }) {
   const type: 'debt' | 'credit' = DEBT_SUBTYPES.includes(data.subtype) ? 'debt' : 'credit'
   const supabase = await createClient()
@@ -274,6 +277,7 @@ export async function updateLiability(id: string, data: {
     due_date: data.dueDate ?? null,
     billing_cycle: data.billingCycle ?? null,
     day_of_month: data.dayOfMonth ?? null,
+    linked_account_id: data.linkedAccountId ?? null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidateAll()
@@ -332,6 +336,31 @@ export async function deleteRecurringIncome(id: string) {
   const supabase = await createClient()
   const { error } = await supabase.from('recurring_incomes').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidateAll()
+}
+
+export async function confirmLiabilityPayment(
+  liabilityId: string,
+  accountId: string,
+  amount: number,
+  newNextPaymentDate: string | null
+) {
+  const supabase = await createClient()
+  const { data: latest } = await supabase
+    .from('accounts_with_latest')
+    .select('latest_value')
+    .eq('id', accountId)
+    .single()
+  const currentValue = latest?.latest_value ?? 0
+  const { error } = await supabase.from('snapshots').insert({
+    account_id: accountId,
+    value: Math.max(0, currentValue - amount),
+    recorded_at: new Date().toISOString().slice(0, 10),
+  })
+  if (error) throw new Error(error.message)
+  if (newNextPaymentDate) {
+    await supabase.from('liabilities').update({ next_payment_date: newNextPaymentDate }).eq('id', liabilityId)
+  }
   revalidateAll()
 }
 

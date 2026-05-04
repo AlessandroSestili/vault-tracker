@@ -9,7 +9,7 @@ import { EditLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
 import { ItemActionSheet } from '@/components/accounts/ItemActionSheet'
 import type { SheetItem, SheetAction } from '@/components/accounts/ItemActionSheet'
 import { deleteLiability } from '@/lib/actions'
-import type { Liability } from '@/types'
+import type { Liability, AccountWithLatestSnapshot } from '@/types'
 import { SUBTYPE_LABEL } from '@/lib/account-config'
 import { formatCurrency, formatDate } from '@/lib/formats'
 import { liabilityBalance, isStructuredDebt, subscriptionMonthlyAmount } from '@/lib/liability-calc'
@@ -101,6 +101,7 @@ export function LiabilitiesList({
   liabNet,
   subscriptionsMonthlyTotal,
   subscriptionsAnnualTotal,
+  accounts = [],
 }: {
   liabilities: Liability[]
   debtsTotal: number
@@ -108,6 +109,7 @@ export function LiabilitiesList({
   liabNet: number
   subscriptionsMonthlyTotal: number
   subscriptionsAnnualTotal: number
+  accounts?: AccountWithLatestSnapshot[]
 }) {
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<Modal>(null)
@@ -329,6 +331,7 @@ export function LiabilitiesList({
           liability={modal.data}
           open
           onOpenChange={(o) => !o && setModal(null)}
+          accounts={accounts}
         />
       )}
       {modal?.kind === 'delete' && (

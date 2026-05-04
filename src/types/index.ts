@@ -80,5 +80,6 @@ export interface Liability {
   due_date: string | null
   billing_cycle: BillingCycle | null
   day_of_month: number | null
+  linked_account_id: string | null
   created_at: string
 }

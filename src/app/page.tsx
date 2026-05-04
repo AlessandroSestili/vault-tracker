@@ -5,7 +5,7 @@ import { VisibilityProvider } from '@/components/accounts/VisibilityContext'
 import { MobileFab } from '@/components/ui/mobile-fab'
 import { PortfolioHeroTotal } from '@/components/ui/portfolio-hero-total'
 import { PortfolioChart } from '@/components/charts/PortfolioChart'
-import { TodayIncomeBanner } from '@/components/recurring/MonthlyProspect'
+import { TodayIncomeBanner, TodayPaymentBanner } from '@/components/recurring/MonthlyProspect'
 import {
   fetchExchangeRates,
   fetchYahooSubdaySeries,
@@ -16,7 +16,7 @@ import {
   type ExchangeRates,
 } from '@/lib/yahoo-finance'
 import {
-  fetchAccounts, fetchPositions, fetchRecurringIncomes,
+  fetchAccounts, fetchPositions, fetchRecurringIncomes, fetchLiabilities,
   mapPositionsWithQuotes, computePortfolioTotals,
   fetchAccountSnapshots, fetchPositionSnapshots,
   upsertTodayPositionSnapshots, computeDailyTotals,
@@ -80,8 +80,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
-  const [accounts, recurringIncomes, accountSnapshots, positionSnapshots, planLimits] = await Promise.all([
-    fetchAccounts(), fetchRecurringIncomes(),
+  const [accounts, recurringIncomes, liabilities, accountSnapshots, positionSnapshots, planLimits] = await Promise.all([
+    fetchAccounts(), fetchRecurringIncomes(), fetchLiabilities(),
     fetchAccountSnapshots(),
     backfillMissingHistory(allPositions, rates).then(() => fetchPositionSnapshots()),
     getPlanLimits(),
@@ -172,6 +172,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
             {/* Today income banner */}
             <TodayIncomeBanner incomes={recurringIncomes} accounts={accounts} />
+            <TodayPaymentBanner liabilities={liabilities} accounts={accounts} />
 
             {/* Chart */}
             <div className="md:rounded-2xl md:bg-card md:border md:border-border md:p-6">

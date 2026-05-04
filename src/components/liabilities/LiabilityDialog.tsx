@@ -13,7 +13,7 @@ import { createLiability, updateLiability } from '@/lib/actions'
 import { ImageUploader } from '@/components/ui/image-uploader'
 import { isStructuredDebt } from '@/lib/liability-calc'
 import { Plus, Loader2, Pencil } from 'lucide-react'
-import type { BillingCycle, Liability, LiabilitySubtype } from '@/types'
+import type { BillingCycle, Liability, LiabilitySubtype, AccountWithLatestSnapshot } from '@/types'
 
 export const SUBTYPE_OPTIONS: { value: LiabilitySubtype; label: string }[] = [
   { value: 'mortgage',        label: 'Mutuo / Prestito bancario' },
@@ -45,6 +45,7 @@ const schema = z.object({
   due_date: z.string().optional(),
   billing_cycle: z.enum(['monthly', 'quarterly', 'semiannual', 'annual']).optional(),
   day_of_month: z.string().optional(),
+  linked_account_id: z.string().optional(),
 }).superRefine((data, ctx) => {
   const subtype = data.subtype as LiabilitySubtype
   if (isStructuredDebt(subtype) && subtype !== 'subscription') {
@@ -59,8 +60,13 @@ const schema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Deve essere > 0', path: ['amount'] })
     if (!data.billing_cycle)
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Obbligatorio', path: ['billing_cycle'] })
-    if (!data.day_of_month || parseInt(data.day_of_month) < 1 || parseInt(data.day_of_month) > 31)
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Inserisci un giorno (1-31)', path: ['day_of_month'] })
+    if (!data.billing_cycle || data.billing_cycle === 'monthly') {
+      if (!data.day_of_month || parseInt(data.day_of_month) < 1 || parseInt(data.day_of_month) > 31)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Inserisci un giorno (1-31)', path: ['day_of_month'] })
+    } else {
+      if (!data.next_payment_date)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Obbligatorio', path: ['next_payment_date'] })
+    }
   } else {
     if (!data.amount || parseFloat(data.amount) <= 0)
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Deve essere > 0', path: ['amount'] })
@@ -74,6 +80,7 @@ type FormInput = z.input<typeof schema>
 function toActionData(data: FormInput) {
   const subtype = data.subtype as LiabilitySubtype
   const structured = isStructuredDebt(subtype) && subtype !== 'subscription'
+  const isNonMonthlySubscription = subtype === 'subscription' && data.billing_cycle && data.billing_cycle !== 'monthly'
   return {
     name: data.name,
     subtype,
@@ -84,10 +91,11 @@ function toActionData(data: FormInput) {
     currentBalance: structured ? parseFloat(data.current_balance ?? '0') : undefined,
     monthlyPayment: structured ? parseFloat(data.monthly_payment ?? '0') : undefined,
     interestRate: data.subtype === 'mortgage' && data.interest_rate ? parseFloat(data.interest_rate) : undefined,
-    nextPaymentDate: structured ? data.next_payment_date : undefined,
+    nextPaymentDate: structured ? data.next_payment_date : isNonMonthlySubscription ? data.next_payment_date : undefined,
     dueDate: data.subtype === 'dated_credit' ? data.due_date : undefined,
     billingCycle: subtype === 'subscription' ? data.billing_cycle : undefined,
-    dayOfMonth: subtype === 'subscription' && data.day_of_month ? parseInt(data.day_of_month) : undefined,
+    dayOfMonth: subtype === 'subscription' && !isNonMonthlySubscription && data.day_of_month ? parseInt(data.day_of_month) : undefined,
+    linkedAccountId: data.linked_account_id || null,
     ...(subtype === 'subscription' ? { amount: parseFloat(data.amount ?? '0') } : {}),
   }
 }
@@ -98,12 +106,14 @@ function LiabilityForm({
   isPending,
   imageUrl,
   onImageChange,
+  accounts,
 }: {
   defaultValues?: Partial<FormInput>
   onSubmit: (data: FormInput) => void
   isPending: boolean
   imageUrl: string | null
   onImageChange: (url: string | null) => void
+  accounts: AccountWithLatestSnapshot[]
 }) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormInput>({
     resolver: zodResolver(schema),
@@ -111,8 +121,11 @@ function LiabilityForm({
   })
 
   const subtype = watch('subtype') as LiabilitySubtype
+  const billingCycle = watch('billing_cycle')
   const structured = isStructuredDebt(subtype) && subtype !== 'subscription'
   const isSubscription = subtype === 'subscription'
+  const isNonMonthlySubscription = isSubscription && billingCycle && billingCycle !== 'monthly'
+  const isRecurring = subtype === 'mortgage' || subtype === 'installment' || subtype === 'subscription'
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
@@ -177,11 +190,19 @@ function LiabilityForm({
               </Select>
               {errors.billing_cycle && <p className="text-xs text-destructive">{errors.billing_cycle.message}</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label>Giorno di addebito</Label>
-              <Input type="number" min={1} max={31} placeholder="es. 15" {...register('day_of_month')} />
-              {errors.day_of_month && <p className="text-xs text-destructive">{errors.day_of_month.message}</p>}
-            </div>
+            {isNonMonthlySubscription ? (
+              <div className="space-y-1.5">
+                <Label>Prossima scadenza</Label>
+                <Input type="date" {...register('next_payment_date')} />
+                {errors.next_payment_date && <p className="text-xs text-destructive">{errors.next_payment_date.message}</p>}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Giorno di addebito</Label>
+                <Input type="number" min={1} max={31} placeholder="es. 15" {...register('day_of_month')} />
+                {errors.day_of_month && <p className="text-xs text-destructive">{errors.day_of_month.message}</p>}
+              </div>
+            )}
           </div>
         </>
       ) : !structured ? (
@@ -226,6 +247,24 @@ function LiabilityForm({
         </div>
       )}
 
+      {isRecurring && accounts.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Conto collegato <span className="text-muted-foreground">(opz.)</span></Label>
+          <Select
+            defaultValue={defaultValues?.linked_account_id ?? ''}
+            onValueChange={(v) => setValue('linked_account_id', v ?? '')}
+          >
+            <SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="">Nessuno</SelectItem>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva'}
       </Button>
@@ -236,9 +275,11 @@ function LiabilityForm({
 export function AddLiabilityDialog({
   open: propOpen,
   onOpenChange: propOnOpenChange,
+  accounts = [],
 }: {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  accounts?: AccountWithLatestSnapshot[]
 } = {}) {
   const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -269,7 +310,7 @@ export function AddLiabilityDialog({
         <DialogHeader>
           <DialogTitle>Aggiungi debito o credito</DialogTitle>
         </DialogHeader>
-        <LiabilityForm onSubmit={onSubmit} isPending={isPending} imageUrl={imageUrl} onImageChange={setImageUrl} />
+        <LiabilityForm onSubmit={onSubmit} isPending={isPending} imageUrl={imageUrl} onImageChange={setImageUrl} accounts={accounts} />
       </DialogContent>
     </Dialog>
   )
@@ -279,10 +320,12 @@ export function EditLiabilityDialog({
   liability,
   open: propOpen,
   onOpenChange: propOnOpenChange,
+  accounts = [],
 }: {
   liability: Liability
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  accounts?: AccountWithLatestSnapshot[]
 }) {
   const [selfOpen, setSelfOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -329,11 +372,13 @@ export function EditLiabilityDialog({
             due_date: liability.due_date ?? '',
             billing_cycle: liability.billing_cycle ?? 'monthly',
             day_of_month: liability.day_of_month?.toString() ?? '',
+            linked_account_id: liability.linked_account_id ?? '',
           }}
           onSubmit={onSubmit}
           isPending={isPending}
           imageUrl={imageUrl}
           onImageChange={setImageUrl}
+          accounts={accounts}
         />
       </DialogContent>
     </Dialog>

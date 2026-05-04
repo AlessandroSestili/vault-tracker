@@ -1,5 +1,9 @@
 import type { BillingCycle, Liability, LiabilitySubtype } from '@/types'
 
+const CYCLE_MONTHS_MAP: Record<BillingCycle, number> = {
+  monthly: 1, quarterly: 3, semiannual: 6, annual: 12,
+}
+
 function monthsBetween(from: Date, to: Date): number {
   return (
     (to.getFullYear() - from.getFullYear()) * 12 +
@@ -11,13 +15,46 @@ export function isStructuredDebt(subtype: LiabilitySubtype): boolean {
   return subtype === 'mortgage' || subtype === 'installment'
 }
 
-const CYCLE_MONTHS: Record<BillingCycle, number> = {
-  monthly: 1, quarterly: 3, semiannual: 6, annual: 12,
-}
-
 export function subscriptionMonthlyAmount(l: Liability): number {
   if (l.subtype !== 'subscription' || !l.billing_cycle) return 0
-  return l.amount / CYCLE_MONTHS[l.billing_cycle]
+  return l.amount / CYCLE_MONTHS_MAP[l.billing_cycle]
+}
+
+export function isDueToday(l: Liability): boolean {
+  const today = new Date().toISOString().slice(0, 10)
+  const todayDay = new Date().getDate()
+  if (l.subtype === 'mortgage' || l.subtype === 'installment') {
+    return !!l.next_payment_date && l.next_payment_date.slice(0, 10) === today
+  }
+  if (l.subtype === 'subscription') {
+    if (!l.billing_cycle || l.billing_cycle === 'monthly') {
+      return l.day_of_month === todayDay
+    }
+    return !!l.next_payment_date && l.next_payment_date.slice(0, 10) === today
+  }
+  return false
+}
+
+export function recurringPaymentAmount(l: Liability): number {
+  if (l.subtype === 'mortgage' || l.subtype === 'installment') return l.monthly_payment ?? 0
+  if (l.subtype === 'subscription') return l.amount
+  return 0
+}
+
+export function advanceNextPaymentDate(l: Liability): string | null {
+  if (l.subtype === 'mortgage' || l.subtype === 'installment') {
+    if (!l.next_payment_date) return null
+    const d = new Date(l.next_payment_date)
+    d.setMonth(d.getMonth() + 1)
+    return d.toISOString().slice(0, 10)
+  }
+  if (l.subtype === 'subscription' && l.billing_cycle && l.billing_cycle !== 'monthly') {
+    if (!l.next_payment_date) return null
+    const d = new Date(l.next_payment_date)
+    d.setMonth(d.getMonth() + CYCLE_MONTHS_MAP[l.billing_cycle])
+    return d.toISOString().slice(0, 10)
+  }
+  return null
 }
 
 export function liabilityBalance(l: Liability, referenceDate: Date = new Date()): number {

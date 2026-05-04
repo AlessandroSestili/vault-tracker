@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Pencil, Trash2, CheckCircle2, Loader2 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/formats'
-import { confirmRecurringIncome, deleteRecurringIncome } from '@/lib/actions'
-import { liabilityBalance } from '@/lib/liability-calc'
+import { confirmRecurringIncome, deleteRecurringIncome, confirmLiabilityPayment } from '@/lib/actions'
+import { liabilityBalance, isDueToday, recurringPaymentAmount, advanceNextPaymentDate } from '@/lib/liability-calc'
 import { EditRecurringIncomeDialog } from './RecurringIncomeDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { RecurringIncome, Liability, AccountWithLatestSnapshot } from '@/types'
@@ -241,6 +241,62 @@ export function TodayIncomeBanner({
             onClick={() => handleConfirm(income)}
             disabled={isPending}
             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-primary-foreground text-[12px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" strokeWidth={2} />}
+            Conferma
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function TodayPaymentBanner({
+  liabilities,
+  accounts,
+}: {
+  liabilities: Liability[]
+  accounts: AccountWithLatestSnapshot[]
+}) {
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
+  const [isPending, startTransition] = useTransition()
+
+  const due = liabilities.filter((l) =>
+    l.linked_account_id &&
+    isDueToday(l) &&
+    !confirmed.has(l.id)
+  )
+
+  if (due.length === 0) return null
+
+  function handleConfirm(l: Liability) {
+    startTransition(async () => {
+      const amount = recurringPaymentAmount(l)
+      const nextDate = advanceNextPaymentDate(l)
+      await confirmLiabilityPayment(l.id, l.linked_account_id!, amount, nextDate)
+      setConfirmed((prev) => new Set([...prev, l.id]))
+    })
+  }
+
+  return (
+    <div className="space-y-2 mb-4">
+      {due.map((l) => (
+        <div
+          key={l.id}
+          className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-medium text-foreground">
+              Oggi paghi: <span className="text-destructive">{l.name}</span>
+            </p>
+            <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
+              −{formatCurrency(recurringPaymentAmount(l), l.currency)} → {accounts.find((a) => a.id === l.linked_account_id)?.name ?? '—'}
+            </p>
+          </div>
+          <button
+            onClick={() => handleConfirm(l)}
+            disabled={isPending}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-[12px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" strokeWidth={2} />}
             Conferma
