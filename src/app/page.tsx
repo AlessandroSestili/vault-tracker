@@ -54,12 +54,13 @@ function toPositionEurSeries(
 
 function aggregateSubday(
   positions: SubdayPositionSeries[],
-  staticBase: number
+  staticBase: number,
+  fallbackValues?: number[]
 ): SubdayTotalPoint[] {
   if (positions.every((p) => p.points.length === 0)) return []
   const allTs = [...new Set(positions.flatMap((s) => s.points.map((p) => p.ts)))].sort()
   const posMaps = positions.map((s) => new Map(s.points.map((p) => [p.ts, p.value])))
-  const lastValues = new Array(positions.length).fill(0)
+  const lastValues = fallbackValues ? [...fallbackValues] : new Array(positions.length).fill(0)
   return allTs.map((ts) => {
     for (let i = 0; i < positions.length; i++) {
       const val = posMaps[i].get(ts)
@@ -116,8 +117,15 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const intradayPositions = intradayResults.map((s, i) =>
     toPositionEurSeries(s, positionsWithQuotes[i].isin!, positionsWithQuotes[i].units ?? 0, rates)
   )
-  const portfolioSubday = aggregateSubday(subdayPositions, staticBase)
-  const portfolioIntraday = aggregateSubday(intradayPositions, staticBase)
+  // Positions without intraday data must start at their known value (not 0) so the chart stays accurate
+  const intradayFallbacks = intradayPositions.map((p, i) =>
+    p.previousClose ?? positionsWithQuotes[i].value
+  )
+  const subdayFallbacks = subdayPositions.map((p, i) =>
+    p.previousClose ?? positionsWithQuotes[i].value
+  )
+  const portfolioSubday = aggregateSubday(subdayPositions, staticBase, subdayFallbacks)
+  const portfolioIntraday = aggregateSubday(intradayPositions, staticBase, intradayFallbacks)
   const hasAnyIntraday = intradayPositions.some((p) => p.points.length > 0)
   const portfolioPreviousClose = hasAnyIntraday
     ? staticBase + intradayPositions.reduce(
