@@ -88,6 +88,11 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         const rawPrev = normalizeCommodityPrice(intradaySeries.previousClose, position.isin!)
         previousCloseEur = toEur(rawPrev, currency, rates) * units
       }
+
+      // Compute EUR-based 1D change (same reference as DetailChart) to include FX movement
+      if (previousCloseEur != null && previousCloseEur > 0) {
+        changePercent = ((currentValue - previousCloseEur) / previousCloseEur) * 100
+      }
     }
   }
 
