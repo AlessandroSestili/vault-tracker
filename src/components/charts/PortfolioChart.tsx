@@ -98,6 +98,15 @@ export function PortfolioChart({
   const hasSubdayData = portfolioIntraday.length > 0 || portfolioSubday.length > 0
   const [period, setPeriod] = useState<Period>(hasSubdayData ? '1D' : '1A')
   const [isDesktop, setIsDesktop] = useState(false)
+  const [fading, setFading] = useState(false)
+
+  function switchPeriod(p: Period) {
+    if (p === period) return
+    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) { setPeriod(p); return }
+    setFading(true)
+    setTimeout(() => { setPeriod(p); setFading(false) }, 150)
+  }
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
@@ -185,6 +194,7 @@ export function PortfolioChart({
 
   return (
     <div>
+      <div style={{ opacity: fading ? 0 : 1, transition: 'opacity 150ms ease-out' }}>
       {showDelta && (
         <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
           <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0 }}>
@@ -459,7 +469,9 @@ export function PortfolioChart({
         </div>
       )}
 
-      <div className="flex justify-center mt-4">
+      </div>
+
+      <div className="flex justify-center mt-7">
         <div
           className="flex gap-0.5 items-center p-0.5 rounded-full border border-white/[0.06]"
           style={{ background: 'rgba(255,255,255,0.03)' }}
@@ -469,7 +481,7 @@ export function PortfolioChart({
             return (
               <button
                 key={p}
-                onClick={() => setPeriod(p)}
+                onClick={() => switchPeriod(p)}
                 className="rounded-full font-mono text-[11px] tracking-[0.4px] transition-all"
                 style={{
                   padding: '6px 12px',
