@@ -26,6 +26,7 @@ import { backfillMissingHistory } from '@/lib/backfill'
 import { getPlanLimits } from '@/lib/plans'
 import { syncSubscriptionIfNeeded } from '@/lib/stripe-sync'
 import { createClient } from '@/lib/supabase/server'
+import { PeriodProvider } from '@/components/portfolio/PeriodContext'
 
 export type { SubdayTotalPoint } from '@/lib/queries'
 
@@ -136,8 +137,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   const allItems = [...accounts, ...positionsWithQuotes, ...manualPositions]
 
+  const hasSubdayData = portfolioIntraday.length > 0 || portfolioSubday.length > 0
+
   return (
     <VisibilityProvider>
+    <PeriodProvider initial={hasSubdayData ? '1D' : '1A'}>
       <div className="max-w-[1400px] mx-auto px-5 md:px-8 py-2 md:py-10 pb-bottom-nav md:pb-10">
         <div className="flex flex-col md:grid md:grid-cols-[1fr_380px] gap-6 md:gap-10 md:items-start">
 
@@ -207,6 +211,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 positionsWithQuotes={positionsWithQuotes}
                 manualPositions={manualPositions}
                 incomes={recurringIncomes}
+                accountSnapshots={accountSnapshots}
+                positionSnapshots={allPosSnaps}
               />
             </div>
             {/* Timestamp — mobile only */}
@@ -218,6 +224,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         </div>
       </div>
       <MobileFab accounts={accounts} planLimits={planLimits} />
+    </PeriodProvider>
     </VisibilityProvider>
   )
 }

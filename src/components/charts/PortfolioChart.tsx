@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { usePeriod } from '@/components/portfolio/PeriodContext'
 import {
   ComposedChart,
   Area,
@@ -95,8 +96,8 @@ export function PortfolioChart({
   portfolioSubday?: SubdayTotalPoint[]
   portfolioPreviousClose?: number | null
 }) {
+  const { period, setPeriod } = usePeriod()
   const hasSubdayData = portfolioIntraday.length > 0 || portfolioSubday.length > 0
-  const [period, setPeriod] = useState<Period>(hasSubdayData ? '1D' : '1A')
   const [isDesktop, setIsDesktop] = useState(false)
   const [fading, setFading] = useState(false)
 
