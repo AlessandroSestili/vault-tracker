@@ -18,16 +18,17 @@ export function BottomNav() {
     <nav
       className="md:hidden fixed left-4 right-4 z-50"
       style={{
-        bottom: 'env(safe-area-inset-bottom, 0px)',
+        bottom: '6px',
         background: 'rgba(18,18,20,0.94)',
         backdropFilter: 'blur(28px) saturate(180%)',
         WebkitBackdropFilter: 'blur(28px) saturate(180%)',
         borderRadius: '9999px',
         border: '1px solid rgba(255,255,255,0.1)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <div className="flex h-16 items-center px-2 gap-1">
+      <div className="flex h-14 items-center px-2 gap-1">
         {tabs.map(({ href, label, Icon }) => {
           const active = pathname === href
           return (
