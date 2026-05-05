@@ -18,7 +18,7 @@ export function BottomNav() {
     <nav
       className="md:hidden fixed left-4 right-4 z-50"
       style={{
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)',
         background: 'rgba(18,18,20,0.94)',
         backdropFilter: 'blur(28px) saturate(180%)',
         WebkitBackdropFilter: 'blur(28px) saturate(180%)',

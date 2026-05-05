@@ -24,7 +24,7 @@ export function LiabilitiesFab({ planLimits, accounts = [] }: { planLimits?: Pla
     <>
       <div
         className="fixed z-40 md:hidden flex justify-center left-0 right-0"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
       >
         <button
           onClick={handleClick}
