@@ -196,7 +196,7 @@
     padding-top: calc(3.5rem + env(safe-area-inset-top));
   }
   .pb-bottom-nav {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .glass-card {
