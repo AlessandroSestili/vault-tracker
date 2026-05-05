@@ -135,28 +135,35 @@ function computeDeltas(
   const daysBack = period === '1D' ? 1 : period === '1S' ? 7 : period === '1M' ? 30 : period === '1A' ? 365 : null
 
   for (const pos of positionsWithQuotes) {
-    if (period === '1D') {
-      map.set(pos.id, pos.changePercent ?? null)
-    } else {
-      const snaps = positionSnaps
-        .filter(s => s.position_id === pos.id)
-        .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
-      if (snaps.length < 2) { map.set(pos.id, null); continue }
-      const currentValue = snaps[snaps.length - 1].value_eur
-      let refValue: number | null = null
-      if (daysBack === null) {
-        refValue = snaps[0].value_eur
-      } else {
-        const cutoff = new Date(today)
-        cutoff.setDate(cutoff.getDate() - daysBack)
-        const cutoffStr = cutoff.toISOString().slice(0, 10)
-        const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoffStr)
-        if (before.length === 0) { map.set(pos.id, null); continue }
-        refValue = before[before.length - 1].value_eur
-      }
-      if (!refValue) { map.set(pos.id, null); continue }
-      map.set(pos.id, ((currentValue - refValue) / refValue) * 100)
+    const snaps = positionSnaps
+      .filter(s => s.position_id === pos.id)
+      .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
+
+    if (snaps.length < 2) {
+      // No snapshot history — fall back to Yahoo changePercent for 1D only
+      map.set(pos.id, period === '1D' ? (pos.changePercent ?? null) : null)
+      continue
     }
+
+    const currentValue = snaps[snaps.length - 1].value_eur
+    let refValue: number | null = null
+
+    if (period === '1D') {
+      // Today vs most recent previous snapshot
+      refValue = snaps[snaps.length - 2].value_eur
+    } else if (daysBack === null) {
+      refValue = snaps[0].value_eur
+    } else {
+      const cutoff = new Date(today)
+      cutoff.setDate(cutoff.getDate() - daysBack)
+      const cutoffStr = cutoff.toISOString().slice(0, 10)
+      const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoffStr)
+      if (before.length === 0) { map.set(pos.id, null); continue }
+      refValue = before[before.length - 1].value_eur
+    }
+
+    if (!refValue) { map.set(pos.id, null); continue }
+    map.set(pos.id, ((currentValue - refValue) / refValue) * 100)
   }
 
   for (const pos of manualPositions) {
