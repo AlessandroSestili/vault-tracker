@@ -16,13 +16,13 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed left-4 right-4 z-50"
+      className="md:hidden fixed left-5 right-5 z-50"
       style={{
         bottom: '6px',
         background: 'rgba(18,18,20,0.94)',
         backdropFilter: 'blur(28px) saturate(180%)',
         WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-        borderRadius: '9999px',
+        borderRadius: '1.65rem',
         border: '1px solid rgba(255,255,255,0.1)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3)',
       }}
