@@ -135,13 +135,21 @@ function computeDeltas(
   const daysBack = period === '1D' ? 1 : period === '1S' ? 7 : period === '1M' ? 30 : period === '1A' ? 365 : null
 
   for (const pos of positionsWithQuotes) {
+    // 1D: use Yahoo's official regularMarketChangePercent (same source as position detail page)
+    if (period === '1D') {
+      if (pos.changePercent !== undefined) {
+        map.set(pos.id, pos.changePercent)
+        continue
+      }
+      // changePercent unavailable — fall back to snapshot comparison
+    }
+
     const snaps = positionSnaps
       .filter(s => s.position_id === pos.id)
       .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
 
     if (snaps.length < 2) {
-      // No snapshot history — fall back to Yahoo changePercent for 1D only
-      map.set(pos.id, period === '1D' ? (pos.changePercent ?? null) : null)
+      map.set(pos.id, null)
       continue
     }
 
@@ -149,7 +157,6 @@ function computeDeltas(
     let refValue: number | null = null
 
     if (period === '1D') {
-      // Today vs most recent previous snapshot
       refValue = snaps[snaps.length - 2].value_eur
     } else if (daysBack === null) {
       refValue = snaps[0].value_eur
