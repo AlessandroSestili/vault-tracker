@@ -83,7 +83,7 @@ export default async function BillingPage() {
       {isFree ? (
         /* Free plan */
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+          <div className="rounded-2xl glass-card border p-5 space-y-4">
             <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">Piano attuale</p>
             <div className="space-y-2">
               {['3 account', '5 posizioni', '5 passività'].map(f => (
@@ -95,7 +95,7 @@ export default async function BillingPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-card p-5 space-y-4">
+          <div className="rounded-2xl glass-card border p-5 space-y-4">
             <p className="font-mono text-[10px] tracking-[2px] uppercase text-muted-foreground">Vault Pro</p>
             <div className="space-y-2">
               {['Account illimitati', 'Posizioni illimitate', 'Passività illimitate'].map(f => (

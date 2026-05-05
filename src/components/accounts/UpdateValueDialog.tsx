@@ -58,7 +58,7 @@ export function UpdateValueDialog({
           <RefreshCcw className="w-3.5 h-3.5" />
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="glass-float border">
         <DialogHeader>
           <DialogTitle>Aggiorna — {account.name}</DialogTitle>
         </DialogHeader>

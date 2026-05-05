@@ -80,7 +80,7 @@ export function AddPositionDialog({
           <Plus className="w-4 h-4" />
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="glass-float border">
         <DialogHeader>
           <DialogTitle>Aggiungi posizione</DialogTitle>
         </DialogHeader>

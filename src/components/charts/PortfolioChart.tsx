@@ -266,7 +266,7 @@ export function PortfolioChart({
                   if (!active || !payload?.length) return null
                   const d = payload[0].payload as SubdayTotalPoint
                   return (
-                    <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
+                    <div className="glass-float border rounded-xl px-3 py-2 shadow-xl">
                       <p className="font-mono text-[10px] text-muted-foreground mb-1">
                         {formatSubdayTs(d.ts, period as '1D' | '1S' | '1M')}
                       </p>
@@ -354,7 +354,7 @@ export function PortfolioChart({
                   if (!active || !payload?.length) return null
                   const d = payload[0].payload as EnrichedPoint
                   return (
-                    <div className="bg-[#111113] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
+                    <div className="glass-float border rounded-xl px-3 py-2 shadow-xl">
                       <p className="font-mono text-[10px] text-muted-foreground mb-1">{formatAxisDate(d.day, period)}</p>
                       {d.total != null ? (
                         <p className="font-mono font-medium text-foreground tabular-nums text-[13px] mb-1">

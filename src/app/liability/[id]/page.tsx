@@ -72,7 +72,7 @@ export default async function LiabilityDetailPage({ params }: { params: Promise<
       </div>
 
       {chartData.length >= 2 && (
-        <div className="rounded-2xl bg-card border border-border p-4">
+        <div className="rounded-2xl glass-card border p-4">
           <p className="font-mono text-[10px] tracking-[1.5px] uppercase text-muted-foreground mb-3">
             {structured ? 'Proiezione ammortamento' : 'Saldo'}
           </p>

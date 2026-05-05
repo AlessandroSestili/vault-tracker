@@ -66,7 +66,7 @@ export function AddAccountDialog({
           <Plus className="w-4 h-4" />
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="glass-float border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Nuovo account</DialogTitle>
         </DialogHeader>
@@ -82,7 +82,7 @@ export function AddAccountDialog({
               <Label>Tipo</Label>
               <Select defaultValue="cash" onValueChange={(v) => setValue('type', v as AccountType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-card border-border">
+                <SelectContent className="glass-float border">
                   {ACCOUNT_TYPE_OPTIONS.map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}

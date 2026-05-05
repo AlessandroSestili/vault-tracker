@@ -104,8 +104,15 @@ export function AddItemSheet({
       {variant === 'fab' ? (
         <button
           onClick={() => setSheet(true)}
-          className="flex items-center gap-1.5 rounded-full px-[18px] py-[11px] text-[13px] font-medium tracking-[-0.1px] shadow-[0_8px_24px_rgba(0,0,0,0.5),0_2px_6px_rgba(0,0,0,0.3)]"
-          style={{ background: 'var(--foreground)', color: 'var(--background)' }}
+          className="flex items-center gap-1.5 rounded-full px-[18px] py-[11px] text-[13px] font-medium tracking-[-0.1px]"
+          style={{
+            background: 'rgba(255,255,255,0.10)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            color: 'oklch(0.82 0.18 130)',
+          }}
         >
           <Plus className="w-[15px] h-[15px]" strokeWidth={2} />
           Aggiungi

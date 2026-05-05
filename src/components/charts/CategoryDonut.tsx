@@ -9,8 +9,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   const d = payload[0].payload
   return (
     <div
-      className="rounded-xl border border-white/[0.08] px-3 py-2.5"
-      style={{ background: 'rgba(9,9,11,0.92)', backdropFilter: 'blur(12px)' }}
+      className="glass-float border rounded-xl px-3 py-2.5"
     >
       <div className="flex items-center gap-2 mb-1">
         <span className="w-2 h-2 rounded-[2px] shrink-0" style={{ backgroundColor: d.color }} />

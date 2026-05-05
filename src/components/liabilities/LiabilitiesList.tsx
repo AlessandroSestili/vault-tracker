@@ -148,7 +148,7 @@ export function LiabilitiesList({
   return (
     <>
       {/* KPI strip */}
-      <div className="rounded-3xl bg-card border border-border p-5 mb-4 md:rounded-none md:bg-transparent md:border-0 md:p-0 md:mb-8">
+      <div className="rounded-3xl glass-card border p-5 mb-4 md:rounded-none md:bg-transparent md:backdrop-blur-none md:border-0 md:p-0 md:mb-8">
       <div className="flex items-start gap-6 md:gap-10 font-mono flex-wrap">
         {debtsTotal > 0 && (
           <div>
@@ -190,7 +190,7 @@ export function LiabilitiesList({
 
       {/* Debts group */}
       {debts.length > 0 && (
-        <div className="rounded-3xl bg-card border border-border px-3 py-2 mb-4">
+        <div className="rounded-3xl glass-card border px-3 py-2 mb-4">
           <GroupHeader
             label="Debiti"
             count={debts.length}
@@ -233,7 +233,7 @@ export function LiabilitiesList({
 
       {/* Credits group */}
       {credits.length > 0 && (
-        <div className="rounded-3xl bg-card border border-border px-3 py-2">
+        <div className="rounded-3xl glass-card border px-3 py-2">
           <GroupHeader
             label="Crediti"
             count={credits.length}
@@ -277,7 +277,7 @@ export function LiabilitiesList({
 
       {/* Subscriptions group */}
       {subscriptions.length > 0 && (
-        <div className="rounded-3xl bg-card border border-border px-3 py-2 mt-4">
+        <div className="rounded-3xl glass-card border px-3 py-2 mt-4">
           <GroupHeader
             label="Abbonamenti"
             count={subscriptions.length}

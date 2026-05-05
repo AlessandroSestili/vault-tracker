@@ -138,7 +138,7 @@ function LiabilityForm({
           onValueChange={(v) => setValue('subtype', v as LiabilitySubtype)}
         >
           <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent className="bg-card border-border">
+          <SelectContent className="glass-float border">
             {SUBTYPE_OPTIONS.map((s) => (
               <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
             ))}
@@ -182,7 +182,7 @@ function LiabilityForm({
                 onValueChange={(v) => setValue('billing_cycle', v as BillingCycle)}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-card border-border">
+                <SelectContent className="glass-float border">
                   {BILLING_CYCLE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                   ))}
@@ -255,7 +255,7 @@ function LiabilityForm({
             onValueChange={(v) => setValue('linked_account_id', v ?? '')}
           >
             <SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger>
-            <SelectContent className="bg-card border-border">
+            <SelectContent className="glass-float border">
               <SelectItem value="">Nessuno</SelectItem>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
@@ -306,7 +306,7 @@ export function AddLiabilityDialog({
           <Plus className="w-4 h-4" />
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="glass-float border">
         <DialogHeader>
           <DialogTitle>Aggiungi debito o credito</DialogTitle>
         </DialogHeader>
@@ -351,7 +351,7 @@ export function EditLiabilityDialog({
           <Pencil className="w-3.5 h-3.5" />
         </DialogTrigger>
       )}
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="glass-float border">
         <DialogHeader>
           <DialogTitle>Modifica {liability.type === 'debt' ? 'debito' : 'credito'}</DialogTitle>
         </DialogHeader>

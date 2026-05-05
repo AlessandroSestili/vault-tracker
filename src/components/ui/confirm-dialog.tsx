@@ -44,7 +44,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!isPending) setOpen(o) }}>
       {!controlled && trigger && <DialogTrigger render={trigger} />}
-      <DialogContent className="sm:max-w-xs bg-card border-border">
+      <DialogContent className="sm:max-w-xs glass-float border">
         <DialogHeader>
           <DialogTitle className="text-foreground">{title}</DialogTitle>
         </DialogHeader>

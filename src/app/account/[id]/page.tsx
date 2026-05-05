@@ -48,7 +48,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-4">
+      <div className="rounded-2xl glass-card border p-4">
         <DetailChart data={chartData} />
       </div>
 

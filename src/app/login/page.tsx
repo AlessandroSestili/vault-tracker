@@ -94,7 +94,7 @@ export default function LoginPage() {
 
         {/* Email/password form */}
         <form onSubmit={handleSubmit} className="space-y-2.5">
-          <div className="flex items-center bg-[#111113] border border-white/[0.06] rounded-xl px-3.5">
+          <div className="flex items-center glass-card border rounded-xl px-3.5">
             <Mail className="w-4 h-4 text-[#71717a] shrink-0" strokeWidth={1.5} />
             <input
               type="email"
@@ -106,7 +106,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="flex items-center bg-[#111113] border border-white/[0.06] rounded-xl px-3.5">
+          <div className="flex items-center glass-card border rounded-xl px-3.5">
             <Lock className="w-4 h-4 text-[#71717a] shrink-0" strokeWidth={1.5} />
             <input
               type={showPw ? 'text' : 'password'}

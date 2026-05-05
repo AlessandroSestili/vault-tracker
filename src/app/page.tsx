@@ -175,7 +175,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <TodayPaymentBanner liabilities={liabilities} accounts={accounts} />
 
             {/* Chart */}
-            <div className="rounded-3xl bg-card border border-border p-5 md:p-6">
+            <div className="rounded-3xl glass-card border p-5 md:p-6">
               <PortfolioChart
                 data={chartData}
                 vaultStart={vaultStart}
@@ -201,7 +201,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 </div>
               </div>
             </div>
-            <div className="rounded-3xl bg-card border border-border px-3 py-3 md:py-2">
+            <div className="rounded-3xl glass-card border px-3 py-3 md:py-2">
               <AccountsList
                 accounts={accounts}
                 positionsWithQuotes={positionsWithQuotes}
