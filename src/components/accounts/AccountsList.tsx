@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Pencil, Trash2, Info, ChevronDown, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { LogoAvatar } from '@/components/ui/logo-avatar'
@@ -9,7 +9,6 @@ import { EditAccountDialog } from './EditAccountDialog'
 import { UpdateValueDialog } from './UpdateValueDialog'
 import { EditPositionDialog } from '@/components/positions/EditPositionDialog'
 import { usePeriod, type Period } from '@/components/portfolio/PeriodContext'
-import type { AccountSnapshot, PositionSnapshot } from '@/lib/queries'
 import { EditRecurringIncomeDialog } from '@/components/recurring/RecurringIncomeDialog'
 import { ItemActionSheet } from './ItemActionSheet'
 import type { SheetItem, SheetAction } from './ItemActionSheet'
@@ -122,86 +121,6 @@ function GroupHeader({
 
 const todayDay = new Date().getDate()
 
-function computeDeltas(
-  period: Period,
-  positionsWithQuotes: PositionWithQuote[],
-  manualPositions: Position[],
-  accounts: AccountWithLatestSnapshot[],
-  accountSnaps: AccountSnapshot[],
-  positionSnaps: PositionSnapshot[],
-): Map<string, number | null> {
-  const map = new Map<string, number | null>()
-  const today = new Date()
-  const daysBack = period === '1D' ? 1 : period === '1S' ? 7 : period === '1M' ? 30 : period === '1A' ? 365 : null
-
-  for (const pos of positionsWithQuotes) {
-    // 1D: use Yahoo's official regularMarketChangePercent (same source as position detail page)
-    if (period === '1D') {
-      if (pos.changePercent !== undefined) {
-        map.set(pos.id, pos.changePercent)
-        continue
-      }
-      // changePercent unavailable — fall back to snapshot comparison
-    }
-
-    const snaps = positionSnaps
-      .filter(s => s.position_id === pos.id)
-      .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
-
-    if (snaps.length < 2) {
-      map.set(pos.id, null)
-      continue
-    }
-
-    const currentValue = snaps[snaps.length - 1].value_eur
-    let refValue: number | null = null
-
-    if (period === '1D') {
-      refValue = snaps[snaps.length - 2].value_eur
-    } else if (daysBack === null) {
-      refValue = snaps[0].value_eur
-    } else {
-      const cutoff = new Date(today)
-      cutoff.setDate(cutoff.getDate() - daysBack)
-      const cutoffStr = cutoff.toISOString().slice(0, 10)
-      const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoffStr)
-      if (before.length === 0) { map.set(pos.id, null); continue }
-      refValue = before[before.length - 1].value_eur
-    }
-
-    if (!refValue) { map.set(pos.id, null); continue }
-    map.set(pos.id, ((currentValue - refValue) / refValue) * 100)
-  }
-
-  for (const pos of manualPositions) {
-    map.set(pos.id, null)
-  }
-
-  for (const acc of accounts) {
-    const snaps = accountSnaps
-      .filter(s => s.account_id === acc.id)
-      .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
-    if (snaps.length < 2 || acc.latest_value === null) { map.set(acc.id, null); continue }
-    const currentValue = acc.latest_value
-    let refValue: number | null = null
-    if (period === '1D') {
-      refValue = snaps[snaps.length - 2].value
-    } else if (daysBack === null) {
-      refValue = snaps[0].value
-    } else {
-      const cutoff = new Date(today)
-      cutoff.setDate(cutoff.getDate() - daysBack)
-      const cutoffStr = cutoff.toISOString().slice(0, 10)
-      const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoffStr)
-      if (before.length === 0) { map.set(acc.id, null); continue }
-      refValue = before[before.length - 1].value
-    }
-    if (!refValue) { map.set(acc.id, null); continue }
-    map.set(acc.id, ((currentValue - refValue) / refValue) * 100)
-  }
-
-  return map
-}
 
 function DeltaBadge({ delta }: { delta: number | null | undefined }) {
   if (delta === undefined) return null
@@ -220,21 +139,16 @@ export function AccountsList({
   positionsWithQuotes,
   manualPositions,
   incomes = [],
-  accountSnapshots = [],
-  positionSnapshots = [],
+  assetDeltaMap = {},
 }: {
   accounts: AccountWithLatestSnapshot[]
   positionsWithQuotes: PositionWithQuote[]
   manualPositions: Position[]
   incomes?: RecurringIncome[]
-  accountSnapshots?: AccountSnapshot[]
-  positionSnapshots?: PositionSnapshot[]
+  assetDeltaMap?: Record<string, Record<Period, number | null>>
 }) {
   const { period } = usePeriod()
-  const assetDeltas = useMemo(
-    () => computeDeltas(period, positionsWithQuotes, manualPositions, accounts, accountSnapshots, positionSnapshots),
-    [period, positionsWithQuotes, manualPositions, accounts, accountSnapshots, positionSnapshots]
-  )
+  const getAssetDelta = (id: string): number | null => assetDeltaMap[id]?.[period] ?? null
   const [sheetItem, setSheetItem] = useState<SheetItem | null>(null)
   const [modal, setModal] = useState<ActiveModal>(null)
   const [openGroups, setOpenGroups] = useState({ conti: true, posizioni: true, entrate: true })
@@ -329,7 +243,7 @@ export function AccountsList({
                 </div>
                 <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                   <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(a.latest_value, a.currency)}</p>
-                  <DeltaBadge delta={assetDeltas.get(a.id)} />
+                  <DeltaBadge delta={getAssetDelta(a.id)} />
                 </div>
               </div>
             )
@@ -376,7 +290,7 @@ export function AccountsList({
                   </div>
                   <div className="text-right shrink-0 ml-2 md:group-hover:opacity-30 transition-opacity">
                     <p className="font-mono text-[13.5px] font-medium tabular-nums tracking-[-0.2px] text-foreground">{formatCurrency(p.value, 'EUR')}</p>
-                    <DeltaBadge delta={assetDeltas.get(p.id)} />
+                    <DeltaBadge delta={getAssetDelta(p.id)} />
                   </div>
                 </div>
               )

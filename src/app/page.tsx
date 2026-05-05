@@ -26,7 +26,7 @@ import { backfillMissingHistory } from '@/lib/backfill'
 import { getPlanLimits } from '@/lib/plans'
 import { syncSubscriptionIfNeeded } from '@/lib/stripe-sync'
 import { createClient } from '@/lib/supabase/server'
-import { PeriodProvider } from '@/components/portfolio/PeriodContext'
+import { PeriodProvider, type Period } from '@/components/portfolio/PeriodContext'
 
 export type { SubdayTotalPoint } from '@/lib/queries'
 
@@ -139,6 +139,73 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   const hasSubdayData = portfolioIntraday.length > 0 || portfolioSubday.length > 0
 
+  // Server-side per-asset deltas (EUR-based) — consistent with portfolio chart and DetailChart
+  type AssetDeltaMap = Record<string, Record<Period, number | null>>
+  const assetDeltaMap: AssetDeltaMap = {}
+
+  const msPerDay = 86_400_000
+  const cutoffStr = (daysBack: number) =>
+    new Date(Date.now() - daysBack * msPerDay).toISOString().slice(0, 10)
+  const pctChange = (current: number, ref: number | null): number | null =>
+    ref && ref > 0 ? ((current - ref) / ref) * 100 : null
+
+  // Live positions: EUR-based, same data sources as portfolio chart and DetailChart
+  for (let i = 0; i < positionsWithQuotes.length; i++) {
+    const pos = positionsWithQuotes[i]
+    const intraday = intradayPositions[i]
+    const subday = subdayPositions[i]
+    const cur = pos.value
+
+    const snaps = allPosSnaps
+      .filter(s => s.position_id === pos.id)
+      .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
+
+    // 1D: intraday previousClose (EUR) — same reference as chart 1D baseline
+    const delta1D = pctChange(cur, intraday.previousClose)
+
+    // 1S/1M: first point in hourly subday series on/after cutoff
+    const firstPtAfter = (cutoff: string): number | null => {
+      const pts = subday.points.filter(p => p.ts.slice(0, 10) >= cutoff)
+      return pts.length > 0 ? pts[0].value : null
+    }
+    const delta1S = pctChange(cur, firstPtAfter(cutoffStr(7)))
+    const delta1M = pctChange(cur, firstPtAfter(cutoffStr(30)))
+
+    // 1A/Max: daily snapshots
+    const snapBefore = (cutoff: string) => {
+      const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoff)
+      return before.length > 0 ? before[before.length - 1].value_eur : null
+    }
+    const delta1A = pctChange(cur, snapBefore(cutoffStr(365)))
+    const deltaMax = snaps.length > 0 ? pctChange(cur, snaps[0].value_eur) : null
+
+    assetDeltaMap[pos.id] = { '1D': delta1D, '1S': delta1S, '1M': delta1M, '1A': delta1A, 'Max': deltaMax }
+  }
+
+  // Manual positions: no price history
+  for (const pos of manualPositions) {
+    assetDeltaMap[pos.id] = { '1D': null, '1S': null, '1M': null, '1A': null, 'Max': null }
+  }
+
+  // Accounts: from account snapshots (manual input, no intraday)
+  for (const acc of accounts) {
+    const snaps = accountSnapshots
+      .filter(s => s.account_id === acc.id)
+      .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
+    const cur = acc.latest_value
+    const snapRef = (cutoff: string) => {
+      const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoff)
+      return before.length > 0 ? before[before.length - 1].value : null
+    }
+    assetDeltaMap[acc.id] = {
+      '1D': snaps.length >= 2 ? pctChange(cur ?? 0, snaps[snaps.length - 2].value) : null,
+      '1S': pctChange(cur ?? 0, snapRef(cutoffStr(7))),
+      '1M': pctChange(cur ?? 0, snapRef(cutoffStr(30))),
+      '1A': pctChange(cur ?? 0, snapRef(cutoffStr(365))),
+      'Max': snaps.length > 0 ? pctChange(cur ?? 0, snaps[0].value) : null,
+    }
+  }
+
   return (
     <VisibilityProvider>
     <PeriodProvider initial={hasSubdayData ? '1D' : '1A'}>
@@ -211,8 +278,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 positionsWithQuotes={positionsWithQuotes}
                 manualPositions={manualPositions}
                 incomes={recurringIncomes}
-                accountSnapshots={accountSnapshots}
-                positionSnapshots={allPosSnaps}
+                assetDeltaMap={assetDeltaMap}
               />
             </div>
             {/* Timestamp — mobile only */}
