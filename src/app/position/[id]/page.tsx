@@ -89,8 +89,11 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         previousCloseEur = toEur(rawPrev, currency, rates) * units
       }
 
-      // Compute EUR-based 1D change (same reference as DetailChart) to include FX movement
-      if (previousCloseEur != null && previousCloseEur > 0) {
+      // Use last intraday candle as "current" — same values DetailChart uses for subdayLast/subdayFirst
+      if (yahooIntradayData && yahooIntradayData.length > 0 && previousCloseEur != null && previousCloseEur > 0) {
+        const lastVal = yahooIntradayData[yahooIntradayData.length - 1].value
+        changePercent = ((lastVal - previousCloseEur) / previousCloseEur) * 100
+      } else if (previousCloseEur != null && previousCloseEur > 0) {
         changePercent = ((currentValue - previousCloseEur) / previousCloseEur) * 100
       }
     }

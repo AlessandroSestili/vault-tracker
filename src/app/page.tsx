@@ -146,38 +146,39 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const msPerDay = 86_400_000
   const cutoffStr = (daysBack: number) =>
     new Date(Date.now() - daysBack * msPerDay).toISOString().slice(0, 10)
-  const pctChange = (current: number, ref: number | null): number | null =>
-    ref && ref > 0 ? ((current - ref) / ref) * 100 : null
+  const pctChange = (current: number | null, ref: number | null): number | null =>
+    current != null && ref != null && ref > 0 ? ((current - ref) / ref) * 100 : null
 
   // Live positions: EUR-based, same data sources as portfolio chart and DetailChart
   for (let i = 0; i < positionsWithQuotes.length; i++) {
     const pos = positionsWithQuotes[i]
     const intraday = intradayPositions[i]
     const subday = subdayPositions[i]
-    const cur = pos.value
 
     const snaps = allPosSnaps
       .filter(s => s.position_id === pos.id)
       .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
 
-    // 1D: intraday previousClose (EUR) — same reference as chart 1D baseline
-    const delta1D = pctChange(cur, intraday.previousClose)
+    // 1D: last intraday candle vs previousClose — same values DetailChart uses for subdayLast/subdayFirst
+    const lastIntraday = intraday.points.length > 0 ? intraday.points[intraday.points.length - 1].value : null
+    const delta1D = pctChange(lastIntraday, intraday.previousClose)
 
-    // 1S/1M: first point in hourly subday series on/after cutoff
-    const firstPtAfter = (cutoff: string): number | null => {
+    // 1S/1M: last subday point vs first point in period — same as chart subdayLast/subdayFirst
+    const lastSubday = subday.points.length > 0 ? subday.points[subday.points.length - 1].value : null
+    const firstSubdayAfter = (cutoff: string): number | null => {
       const pts = subday.points.filter(p => p.ts.slice(0, 10) >= cutoff)
       return pts.length > 0 ? pts[0].value : null
     }
-    const delta1S = pctChange(cur, firstPtAfter(cutoffStr(7)))
-    const delta1M = pctChange(cur, firstPtAfter(cutoffStr(30)))
+    const delta1S = pctChange(lastSubday, firstSubdayAfter(cutoffStr(7)))
+    const delta1M = pctChange(lastSubday, firstSubdayAfter(cutoffStr(30)))
 
-    // 1A/Max: daily snapshots
+    // 1A/Max: daily snapshots (today's snap = pos.value, consistent with chart)
     const snapBefore = (cutoff: string) => {
       const before = snaps.filter(s => s.recorded_at.slice(0, 10) <= cutoff)
       return before.length > 0 ? before[before.length - 1].value_eur : null
     }
-    const delta1A = pctChange(cur, snapBefore(cutoffStr(365)))
-    const deltaMax = snaps.length > 0 ? pctChange(cur, snaps[0].value_eur) : null
+    const delta1A = pctChange(pos.value, snapBefore(cutoffStr(365)))
+    const deltaMax = snaps.length > 0 ? pctChange(pos.value, snaps[0].value_eur) : null
 
     assetDeltaMap[pos.id] = { '1D': delta1D, '1S': delta1S, '1M': delta1M, '1A': delta1A, 'Max': deltaMax }
   }
