@@ -89,12 +89,13 @@ export default async function PositionDetailPage({ params }: { params: Promise<{
         previousCloseEur = toEur(rawPrev, currency, rates) * units
       }
 
-      // Use last intraday candle as "current" — same values DetailChart uses for subdayLast/subdayFirst
-      if (yahooIntradayData && yahooIntradayData.length > 0 && previousCloseEur != null && previousCloseEur > 0) {
+      // Use first→last intraday candle — same reference as DetailChart 1D visual
+      if (yahooIntradayData && yahooIntradayData.length > 0) {
+        const firstVal = yahooIntradayData[0].value
         const lastVal = yahooIntradayData[yahooIntradayData.length - 1].value
-        changePercent = ((lastVal - previousCloseEur) / previousCloseEur) * 100
-      } else if (previousCloseEur != null && previousCloseEur > 0) {
-        changePercent = ((currentValue - previousCloseEur) / previousCloseEur) * 100
+        if (firstVal > 0) {
+          changePercent = ((lastVal - firstVal) / firstVal) * 100
+        }
       }
     }
   }

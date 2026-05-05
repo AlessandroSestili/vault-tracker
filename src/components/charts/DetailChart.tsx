@@ -173,10 +173,7 @@ export function DetailChart({
   }
 
   // ── Sub-daily delta ───────────────────────────────────────────────────────
-  const subdayFirst =
-    isSubday && period === '1D' && previousClose != null
-      ? previousClose
-      : (subdayPoints[0]?.value ?? 0)
+  const subdayFirst = subdayPoints[0]?.value ?? 0
   const subdayLast = subdayPoints[subdayPoints.length - 1]?.value ?? 0
   const subdayDelta = subdayLast - subdayFirst
   const subdayDeltaPct = subdayFirst !== 0 ? (subdayDelta / subdayFirst) * 100 : 0
