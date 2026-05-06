@@ -93,6 +93,8 @@ export function DetailChart({
   yahooIntraday,
   yahooSubday,
   previousClose,
+  period: controlledPeriod,
+  onPeriodChange,
 }: {
   data: Point[]
   color?: string
@@ -101,11 +103,19 @@ export function DetailChart({
   yahooIntraday?: SubdayPoint[]
   yahooSubday?: SubdayPoint[]
   previousClose?: number | null
+  period?: Period
+  onPeriodChange?: (p: Period) => void
 }) {
   const overlay = !!yahoo && yahoo.length > 0
   const hasSubdayData = !!(yahooIntraday?.length || yahooSubday?.length)
-  const [period, setPeriod] = useState<Period>(hasSubdayData ? '1D' : '1A')
+  const [internalPeriod, setInternalPeriod] = useState<Period>(hasSubdayData ? '1D' : '1A')
+  const period = controlledPeriod ?? internalPeriod
   const [isDesktop, setIsDesktop] = useState(false)
+
+  function handlePeriodChange(p: Period) {
+    setInternalPeriod(p)
+    onPeriodChange?.(p)
+  }
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
@@ -120,9 +130,9 @@ export function DetailChart({
     if (!isSubday) return []
     if (period === '1D') return yahooIntraday ?? []
     if (!yahooSubday || yahooSubday.length === 0) return []
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - (period === '1S' ? 7 : 30))
-    const filtered = yahooSubday.filter((p) => new Date(p.ts) >= cutoff)
+    const daysBack = period === '1S' ? 7 : 30
+    const cutoffDate = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10)
+    const filtered = yahooSubday.filter((p) => p.ts.slice(0, 10) >= cutoffDate)
     return period === '1M' ? downsampleTo4h(filtered) : filtered
   }, [period, isSubday, yahooIntraday, yahooSubday])
 
@@ -156,7 +166,7 @@ export function DetailChart({
         <div className="flex items-center justify-center h-[140px] text-muted-foreground font-mono text-[11px] tracking-[0.5px]">
           {period === '1D' ? 'Nessun dato per oggi' : 'Nessun dato per questo periodo'}
         </div>
-        {overlay && <PeriodSelector period={period} onChange={setPeriod} available={availablePeriods} />}
+        {overlay && <PeriodSelector period={period} onChange={handlePeriodChange} available={availablePeriods} />}
       </div>
     )
   }
@@ -167,7 +177,7 @@ export function DetailChart({
         <div className="flex items-center justify-center h-[140px] text-muted-foreground font-mono text-[11px] tracking-[0.5px]">
           Nessun dato per questo periodo
         </div>
-        {overlay && <PeriodSelector period={period} onChange={setPeriod} available={availablePeriods} />}
+        {overlay && <PeriodSelector period={period} onChange={handlePeriodChange} available={availablePeriods} />}
       </div>
     )
   }
@@ -429,7 +439,7 @@ export function DetailChart({
         </div>
       )}
 
-      {overlay && <PeriodSelector period={period} onChange={setPeriod} available={availablePeriods} />}
+      {overlay && <PeriodSelector period={period} onChange={handlePeriodChange} available={availablePeriods} />}
     </div>
   )
 }

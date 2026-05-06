@@ -159,10 +159,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       .filter(s => s.position_id === pos.id)
       .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
 
-    // 1D: last vs first intraday candle — same reference as DetailChart 1D visual
+    // 1D: last intraday vs previousClose; fallback to first intraday candle —
+    // same reference chain that DetailChart uses for subdayFirst
     const firstIntraday = intraday.points.length > 0 ? intraday.points[0].value : null
     const lastIntraday = intraday.points.length > 0 ? intraday.points[intraday.points.length - 1].value : null
-    const delta1D = pctChange(lastIntraday, firstIntraday)
+    const intradayRef = intraday.previousClose ?? firstIntraday
+    const delta1D = pctChange(lastIntraday, intradayRef)
 
     // 1S/1M: last subday point vs first point in period — same as chart subdayLast/subdayFirst
     const lastSubday = subday.points.length > 0 ? subday.points[subday.points.length - 1].value : null
