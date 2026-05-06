@@ -24,6 +24,26 @@ export const COMMODITY_MAP: Record<string, { ticker: string; name: string; price
   IE00B4NCWG09: { ticker: 'PHAG.L',  name: 'WisdomTree Physical Silver ETC', pricePerG: true },
 }
 
+// Preferred exchange suffixes — EUR-priced, liquid European venues
+const EXCHANGE_PREFERENCE = ['.AS', '.MI', '.PA', '.DE']
+
+async function probeTickerCurrency(ticker: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`,
+      { next: { revalidate: 3600 } }
+    )
+    if (!res.ok) return null
+    const json = await res.json()
+    const meta = json?.chart?.result?.[0]?.meta
+    const closes = json?.chart?.result?.[0]?.indicators?.quote?.[0]?.close ?? []
+    if (!meta || !closes.some((c: number | null) => c != null)) return null
+    return meta.currency ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function searchTicker(isin: string): Promise<string | null> {
   if (COMMODITY_MAP[isin]) return COMMODITY_MAP[isin].ticker
   const res = await fetch(
@@ -32,7 +52,21 @@ export async function searchTicker(isin: string): Promise<string | null> {
   )
   if (!res.ok) return null
   const json = await res.json()
-  return json?.quotes?.[0]?.symbol ?? null
+  const symbol: string | null = json?.quotes?.[0]?.symbol ?? null
+  if (!symbol) return null
+
+  // If Yahoo returned an LSE ticker (.L), try EUR-priced European exchanges first
+  const dotIdx = symbol.lastIndexOf('.')
+  if (dotIdx >= 0 && symbol.slice(dotIdx) === '.L') {
+    const base = symbol.slice(0, dotIdx)
+    for (const suffix of EXCHANGE_PREFERENCE) {
+      const candidate = base + suffix
+      const currency = await probeTickerCurrency(candidate)
+      if (currency === 'EUR') return candidate
+    }
+  }
+
+  return symbol
 }
 
 async function fetchQuote(ticker: string): Promise<Omit<Quote, 'isin' | 'ticker'> | null> {
