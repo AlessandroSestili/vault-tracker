@@ -23,9 +23,6 @@ import {
   type DailyTotal, type SubdayTotalPoint,
 } from '@/lib/queries'
 import { backfillMissingHistory } from '@/lib/backfill'
-import { getPlanLimits } from '@/lib/plans'
-import { syncSubscriptionIfNeeded } from '@/lib/stripe-sync'
-import { createClient } from '@/lib/supabase/server'
 import { PeriodProvider, type Period } from '@/components/portfolio/PeriodContext'
 
 export type { SubdayTotalPoint } from '@/lib/queries'
@@ -71,21 +68,13 @@ function aggregateSubday(
   })
 }
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ upgraded?: string }> }) {
-  const sp = await searchParams
-  if (sp.upgraded === 'true') {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) await syncSubscriptionIfNeeded(user.id)
-  }
-
+export default async function HomePage() {
   const [allPositions, rates] = await Promise.all([fetchPositions(), fetchExchangeRates()])
 
-  const [accounts, recurringIncomes, liabilities, accountSnapshots, positionSnapshots, planLimits] = await Promise.all([
+  const [accounts, recurringIncomes, liabilities, accountSnapshots, positionSnapshots] = await Promise.all([
     fetchAccounts(), fetchRecurringIncomes(), fetchLiabilities(),
     fetchAccountSnapshots(),
     backfillMissingHistory(allPositions, rates).then(() => fetchPositionSnapshots()),
-    getPlanLimits(),
   ])
 
   const livePositions = allPositions.filter((p) => !p.is_manual)
@@ -272,7 +261,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <div className="flex items-center gap-1.5">
                 <RefreshButton />
                 <div className="hidden md:block">
-                  <AddItemSheet accounts={accounts} planLimits={planLimits} />
+                  <AddItemSheet accounts={accounts} />
                 </div>
               </div>
             </div>
@@ -293,7 +282,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         </div>
       </div>
-      <MobileFab accounts={accounts} planLimits={planLimits} />
+      <MobileFab accounts={accounts} />
     </PeriodProvider>
     </VisibilityProvider>
   )

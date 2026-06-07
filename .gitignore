@@ -48,3 +48,7 @@ vault-tracker-guida.*
 tests/.auth/
 test-results/
 playwright-report/
+
+# tooling locale (graphify graph output + config Claude Code)
+/graphify-out/
+/.claude/

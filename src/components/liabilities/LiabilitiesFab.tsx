@@ -3,21 +3,13 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { AddLiabilityDialog } from '@/components/liabilities/LiabilityDialog'
-import { UpgradeModal } from '@/components/ui/upgrade-modal'
-import type { PlanLimits } from '@/lib/plan-config'
 import type { AccountWithLatestSnapshot } from '@/types'
-import { isAtLimit } from '@/lib/plan-config'
 
-export function LiabilitiesFab({ planLimits, accounts = [] }: { planLimits?: PlanLimits; accounts?: AccountWithLatestSnapshot[] }) {
+export function LiabilitiesFab({ accounts = [] }: { accounts?: AccountWithLatestSnapshot[] }) {
   const [open, setOpen] = useState(false)
-  const [upgrade, setUpgrade] = useState(false)
 
   function handleClick() {
-    if (planLimits && isAtLimit(planLimits.plan, 'liabilities', planLimits.counts.liabilities)) {
-      setUpgrade(true)
-    } else {
-      setOpen(true)
-    }
+    setOpen(true)
   }
 
   return (
@@ -43,7 +35,6 @@ export function LiabilitiesFab({ planLimits, accounts = [] }: { planLimits?: Pla
         </button>
       </div>
       <AddLiabilityDialog open={open} onOpenChange={setOpen} accounts={accounts} />
-      <UpgradeModal open={upgrade} onOpenChange={setUpgrade} resource="liabilities" />
     </>
   )
 }
