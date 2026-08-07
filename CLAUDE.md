@@ -106,7 +106,9 @@ Required in `.env.local` (auto-populated via `vercel env pull`):
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
 Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- For architectural/relational questions (how code is connected, dependencies, impact of a change, "what breaks if I touch X"), prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`. These return a scoped subgraph and beat reading many files.
+- For exact-keyword searches (find a symbol, remove a dependency, "where is X used"), use grep/find directly — more precise and faster than the graph.
+- The graph can be stale: if results don't match the code, run `graphify update .` and retry.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
